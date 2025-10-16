@@ -131,6 +131,81 @@ function renderResult(B, gammaHzPerT) {
   renderHarmonics(computeHarmonics(fHz));
 }
 
+function unitToHz(value, unit) {
+  if (!Number.isFinite(value)) return NaN;
+  if (unit === 'Hz') return value;
+  if (unit === 'kHz') return value * 1e3;
+  if (unit === 'MHz') return value * 1e6;
+  return value;
+}
+
+function computeSkinDepthMeters(freqHz, sigma, muRel = 1) {
+  const mu0 = 4 * Math.PI * 1e-7; // H/m
+  const mu = muRel * mu0;
+  const omega = 2 * Math.PI * freqHz;
+  if (!(freqHz > 0) || !(sigma > 0)) return NaN;
+  return Math.sqrt(2 / (omega * mu * sigma));
+}
+
+function estimateSearchRadius(freqHz, sigma, depthM, coinCount, coinDiameterMm, threshold = 0.3, burialYears = 80) {
+  const delta = computeSkinDepthMeters(freqHz, sigma);
+  if (!Number.isFinite(delta)) return { delta, radius: NaN, attenuation: NaN };
+  // Attenuation factor at depth z: exp(-z/delta)
+  const attenuation = Math.exp(-depthM / delta);
+  // Target size proxy ~ area * count
+  const radiusCoin = (coinDiameterMm / 1000) / 2;
+  const targetArea = Math.PI * radiusCoin * radiusCoin * coinCount;
+  // Heuristic: detectable radius on surface ~ k * delta * attenuation^(p) * (targetArea)^(1/3)
+  const k = 1.0; // scaling constant (heuristic)
+  const p = 0.5; // non-linear perception factor
+  let radius = k * delta * Math.pow(attenuation, p) * Math.cbrt(targetArea + 1e-9);
+  // Apply threshold (lower threshold -> larger radius)
+  radius = radius * (1 / Math.max(threshold, 1e-3));
+  // Buried years factor: soil compaction/corrosion/aging effects (heuristic 0.9–1.1)
+  const aging = Math.min(1.1, Math.max(0.9, 1 - (burialYears - 80) * 0.001));
+  radius *= aging;
+  return { delta, radius, attenuation };
+}
+
+function bindGeophysicsUI() {
+  el('btnGeoCalc').addEventListener('click', () => {
+    const fVal = parseFloat(el('genFreq').value);
+    const fUnit = el('genFreqUnits').value;
+    const freqHz = unitToHz(fVal, fUnit);
+    const sigma = parseFloat(el('soilSigma').value);
+    const depthM = parseFloat(el('targetDepth').value);
+    const coinCount = Math.max(1, Math.floor(parseFloat(el('coinCount').value) || 1));
+    const coinDiameterMm = parseFloat(el('coinDiameter').value);
+    const threshold = parseFloat(el('threshold').value);
+    const burialYears = Math.max(0, Math.floor(parseFloat(el('burialYears').value || '80')));
+
+    if (!(freqHz > 0) || !(sigma > 0) || !(depthM >= 0) || !(coinDiameterMm > 0)) {
+      alert('Ελέγξτε τιμές: συχνότητα, αγωγιμότητα, βάθος, διάμετρος νομίσματος.');
+      return;
+    }
+
+    const { delta, radius, attenuation } = estimateSearchRadius(
+      freqHz, sigma, depthM, coinCount, coinDiameterMm, threshold, burialYears
+    );
+
+    const r = Number.isFinite(radius) ? radius : NaN;
+    const circumference = Number.isFinite(r) ? 2 * Math.PI * r : NaN;
+    const area = Number.isFinite(r) ? Math.PI * r * r : NaN;
+    const html = `
+      <p>Βάθος διείσδυσης δ ≈ <strong>${delta.toFixed(3)}</strong> m</p>
+      <p>Εξασθένηση στο βάθος z: <strong>${attenuation.toFixed(3)}</strong></p>
+      <p>Προτεινόμενη ζώνη (κύκλος γύρω από το σημείο):</p>
+      <ul>
+        <li>Ακτίνα: <strong>${Number.isFinite(r) ? r.toFixed(2) : '—'} m</strong></li>
+        <li>Περίμετρος: <strong>${Number.isFinite(circumference) ? circumference.toFixed(2) : '—'} m</strong></li>
+        <li>Εμβαδό: <strong>${Number.isFinite(area) ? area.toFixed(1) : '—'} m²</strong></li>
+      </ul>
+      <p class="muted small">Λαμβάνεται υπόψη ευρετικό «aging» για ${burialYears} έτη ταφής.</p>
+    `;
+    el('geoOutputs').innerHTML = html;
+  });
+}
+
 function bindUI() {
   el('btnFetchPlace').addEventListener('click', async () => {
     try {
@@ -180,6 +255,7 @@ function init() {
   renderGammaTable();
   loadPlaces();
   bindUI();
+  bindGeophysicsUI();
 }
 
 init();
