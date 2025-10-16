@@ -73,6 +73,9 @@
         </select>
         <span class="muted" id="providerInfo"></span>
       </div>
+      <div class="row">
+        <span class="muted" id="declInfo"></span>
+      </div>
     </section>
 
     <section class="panel">
@@ -128,6 +131,25 @@
       <p class="muted small">
         Τα αποτελέσματα είναι ευρετικά, βασισμένα σε βάθος διείσδυσης (skin depth) \(\delta = \sqrt{2/(\omega\mu\sigma)}\) και απλή κλιμάκωση στόχου. Δεν υποκαθιστούν πλήρες γεωφυσικό μοντέλο.
       </p>
+    </section>
+
+    <section class="panel">
+      <h2>Survey (διόρθωση απόκλισης & τοποθέτηση στόχου)</h2>
+      <div class="row">
+        <button id="btnAddPoint">Προσθήκη σημείου</button>
+        <button id="btnSolve">Υπολογισμός θέσης στόχου</button>
+        <span class="muted">Χρειάζονται ≥2 σημεία (bearing/απόσταση)</span>
+      </div>
+      <div class="row">
+        <label for="magBearing">Μαγνητικό αζιμούθιο (°):</label>
+        <input id="magBearing" type="number" step="any" placeholder="0–360" />
+        <label for="distance">Εκτιμώμενη απόσταση (m):</label>
+        <input id="distance" type="number" step="any" placeholder="προαιρετικό" />
+        <button id="btnUseGPS">Χρήση τρέχουσας θέσης</button>
+      </div>
+      <div id="surveyList" class="small muted"></div>
+      <div id="surveyResult"></div>
+      <p class="muted small">Διορθώνουμε το μαγνητικό αζιμούθιο με την τοπική απόκλιση (declination) για αληθινό βορρά.</p>
     </section>
 
     <section class="panel">

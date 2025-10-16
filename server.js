@@ -63,12 +63,13 @@ app.get('/api/field/noaa', async (req, res) => {
 
     const result = (data.result && data.result[0]) || data;
     const totalNT = result.totalintensity || result.totalIntensity || result.F || result['total-intensity'];
+    const decl = result.declination ?? result.dec ?? result.declination_deg ?? result.decl ?? null;
     if (!totalNT) {
       return res.status(502).json({ error: 'Μη αναμενόμενη απόκριση NOAA', raw: data });
     }
 
     const totalT = totalNT * 1e-9;
-    res.json({ provider: 'NOAA', lat, lon, altitudeMeters: alt, date: date.toISOString(), decimalYear: decYear, totalIntensityT: totalT, units: 'T', raw: result });
+    res.json({ provider: 'NOAA', lat, lon, altitudeMeters: alt, date: date.toISOString(), decimalYear: decYear, totalIntensityT: totalT, declinationDeg: typeof decl === 'number' ? decl : (decl ? parseFloat(decl) : undefined), units: 'T', raw: result });
   } catch (err) {
     res.status(502).json({ error: 'Αποτυχία κλήσης NOAA', details: String(err) });
   }
@@ -115,12 +116,13 @@ app.get('/api/field/bgs', async (req, res) => {
 
     const result = data && data.result ? data.result : data;
     const totalNT = result.total_intensity || result['total-intensity'] || result.F;
+    const decl = result.declination ?? result.dec ?? result.declination_deg ?? result.D ?? null;
     if (!totalNT) {
       return res.status(502).json({ error: 'Μη αναμενόμενη απόκριση BGS', raw: data });
     }
 
     const totalT = totalNT * 1e-9;
-    res.json({ provider: 'BGS', lat, lon, altitudeMeters: alt, date: iso, totalIntensityT: totalT, units: 'T', raw: result });
+    res.json({ provider: 'BGS', lat, lon, altitudeMeters: alt, date: iso, totalIntensityT: totalT, declinationDeg: typeof decl === 'number' ? decl : (decl ? parseFloat(decl) : undefined), units: 'T', raw: result });
   } catch (err) {
     res.status(502).json({ error: 'Αποτυχία κλήσης BGS', details: String(err) });
   }

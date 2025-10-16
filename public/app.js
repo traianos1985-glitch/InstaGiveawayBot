@@ -91,12 +91,14 @@ async function fetchField(lat, lon) {
     if (vals.length === 0) throw new Error('Καμία τιμή διαθέσιμη από NOAA/BGS');
     const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
     const label = `B = ${(mean*1e6).toFixed(2)} μT (μέσος όρος${vals.length===1? ' — 1 πηγή' : ''}) @ t=${dateIso} φ=${lat.toFixed(4)} λ=${lon.toFixed(4)} h=${altMeters}m`;
-    return { B: mean, label };
+    const decl = [a, b].map(x => x.status === 'fulfilled' ? x.value.declinationDeg : undefined).filter(v => typeof v === 'number');
+    const declMean = decl.length ? decl.reduce((s, x) => s + x, 0) / decl.length : undefined;
+    return { B: mean, label, declinationDeg: declMean };
   }
 
   const data = await get(source);
   const label = `B = ${(data.totalIntensityT*1e6).toFixed(2)} μT (${data.provider}) @ t=${data.date || dateIso} φ=${lat.toFixed(4)} λ=${lon.toFixed(4)} h=${altMeters}m`;
-  return { B: data.totalIntensityT, label };
+  return { B: data.totalIntensityT, label, declinationDeg: data.declinationDeg };
 }
 
 function computeHarmonics(fHz) {
@@ -210,8 +212,9 @@ function bindUI() {
   el('btnFetchPlace').addEventListener('click', async () => {
     try {
       const [lat, lon] = el('place').value.split(',').map(parseFloat);
-      const { B, label } = await fetchField(lat, lon);
+      const { B, label, declinationDeg } = await fetchField(lat, lon);
       setBFromTesla(B, label);
+      document.getElementById('declInfo').textContent = (typeof declinationDeg === 'number') ? `Τοπική απόκλιση: ${(declinationDeg).toFixed(2)}°` : '';
     } catch (e) {
       alert('Σφάλμα λήψης πεδίου: ' + e.message);
     }
@@ -227,9 +230,10 @@ function bindUI() {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       try {
         const { latitude, longitude } = pos.coords;
-        const { B, label } = await fetchField(latitude, longitude);
+        const { B, label, declinationDeg } = await fetchField(latitude, longitude);
         setBFromTesla(B, label + ` @ ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         status.textContent = 'Έτοιμο.';
+        document.getElementById('declInfo').textContent = (typeof declinationDeg === 'number') ? `Τοπική απόκλιση: ${(declinationDeg).toFixed(2)}°` : '';
       } catch (e) {
         status.textContent = 'Σφάλμα λήψης πεδίου.';
       }
@@ -256,6 +260,7 @@ function init() {
   loadPlaces();
   bindUI();
   bindGeophysicsUI();
+  initSurvey();
 }
 
 init();
