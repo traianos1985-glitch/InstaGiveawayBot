@@ -1,11 +1,12 @@
 const GYRO = [
+  // τιμές γ/2π σε Hz/T (προεπιλεγμένες αναφορές)
   { id: 'au197', name: 'Χρυσός 197Au (πυρήνας)', gammaHzPerT: 0.327e6 },
-  { id: 'ag107', name: 'Άργυρος 107Ag (πυρήνας)', gammaHzPerT: 1.088e6, sign: -1 },
-  { id: 'ag109', name: 'Άργυρος 109Ag (πυρήνας)', gammaHzPerT: 1.251e6, sign: -1 },
+  { id: 'ag107', name: 'Άργυρος 107Ag (πυρήνας)', gammaHzPerT: 1.088e6 },
+  { id: 'ag109', name: 'Άργυρος 109Ag (πυρήνας)', gammaHzPerT: 1.251e6 },
   { id: 'cu63', name: 'Χαλκός 63Cu (πυρήνας)', gammaHzPerT: 11.285e6 },
-  { id: 'cu65', name: 'Χαλκός 65Cu (πυρήνας)', gammaHzPerT: 12.089e6 },
-  { id: 'al27', name: 'Αλουμίνιο 27Al (πυρήνας)', gammaHzPerT: 11.094e6 },
-  { id: 'fe57', name: 'Σίδηρος 57Fe (πυρήνας, ενδεικτικό για κιβώτια 1940)', gammaHzPerT: 1.375e6 }
+  { id: 'cu65', name: 'Χαλκός 65Cu (πυρήνας)', gammaHzPerT: 12.0899e6 },
+  { id: 'al27', name: 'Αλουμίνιο 27Al (πυρήνας)', gammaHzPerT: 11.094266e6 },
+  { id: 'fe57', name: 'Σίδηρος 57Fe (πυρήνας, ενδεικτικό για κιβώτια 1940)', gammaHzPerT: 1.3758e6 }
 ];
 
 const el = (id) => document.getElementById(id);
@@ -22,7 +23,7 @@ function populateMaterials() {
 
 function renderGammaTable() {
   const div = document.getElementById('gammaTable');
-  const rows = GYRO.map(g => `<tr><td>${g.name}</td><td>${(g.gammaHzPerT/1e6).toFixed(3)} MHz/T</td></tr>`).join('');
+  const rows = GYRO.map(g => `<tr><td>${g.name}</td><td>${(g.gammaHzPerT/1e6).toFixed(6)} MHz/T</td></tr>`).join('');
   div.innerHTML = `<table><thead><tr><th>Υλικό</th><th>γ/2π</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -44,6 +45,15 @@ function getSelectedGamma() {
   return Math.abs(item.gammaHzPerT);
 }
 
+function getGammaFromOverride() {
+  const useOverride = el('gammaOverrideChk').checked;
+  if (!useOverride) return null;
+  const val = parseFloat(el('gammaOverride').value);
+  if (!Number.isFinite(val) || val <= 0) return null;
+  const units = el('gammaUnits').value;
+  return units === 'MHz/T' ? val * 1e6 : val; // return Hz/T
+}
+
 function getBInTesla() {
   const val = parseFloat(el('bValue').value);
   const units = el('bUnits').value;
@@ -59,12 +69,15 @@ function setBFromTesla(B, providerLabel) {
 
 async function fetchField(lat, lon) {
   const source = el('source').value;
-  const dateIso = new Date().toISOString();
+  const dtVal = el('dt').value;
+  const dateIso = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
+  const altMetersRaw = parseFloat(el('altitude').value);
+  const altMeters = Number.isFinite(altMetersRaw) ? altMetersRaw : 0;
 
   async function get(provider) {
     const url = provider === 'noaa'
-      ? `/api/field/noaa?lat=${lat}&lon=${lon}&date=${encodeURIComponent(dateIso)}`
-      : `/api/field/bgs?lat=${lat}&lon=${lon}&date=${encodeURIComponent(dateIso)}`;
+      ? `/api/field/noaa?lat=${lat}&lon=${lon}&alt=${altMeters}&date=${encodeURIComponent(dateIso)}`
+      : `/api/field/bgs?lat=${lat}&lon=${lon}&alt=${altMeters}&date=${encodeURIComponent(dateIso)}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
@@ -77,12 +90,12 @@ async function fetchField(lat, lon) {
     if (b.status === 'fulfilled') vals.push(b.value.totalIntensityT);
     if (vals.length === 0) throw new Error('Καμία τιμή διαθέσιμη από NOAA/BGS');
     const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
-    const label = `B = ${(mean*1e6).toFixed(2)} μT (μέσος όρος${vals.length===1? ' — 1 πηγή' : ''})`;
+    const label = `B = ${(mean*1e6).toFixed(2)} μT (μέσος όρος${vals.length===1? ' — 1 πηγή' : ''}) @ t=${dateIso} φ=${lat.toFixed(4)} λ=${lon.toFixed(4)} h=${altMeters}m`;
     return { B: mean, label };
   }
 
   const data = await get(source);
-  const label = `B = ${(data.totalIntensityT*1e6).toFixed(2)} μT (${data.provider})`;
+  const label = `B = ${(data.totalIntensityT*1e6).toFixed(2)} μT (${data.provider}) @ t=${data.date || dateIso} φ=${lat.toFixed(4)} λ=${lon.toFixed(4)} h=${altMeters}m`;
   return { B: data.totalIntensityT, label };
 }
 
@@ -156,7 +169,8 @@ function bindUI() {
       alert('Δώστε έγκυρη τιμή B.');
       return;
     }
-    const gamma = getSelectedGamma();
+    const override = getGammaFromOverride();
+    const gamma = override ?? getSelectedGamma();
     renderResult(B, gamma);
   });
 }

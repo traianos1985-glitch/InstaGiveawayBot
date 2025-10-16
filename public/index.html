@@ -19,6 +19,15 @@
         <label for="material">Υλικό (πυρήνας, γ/2π σε Hz/T):</label>
         <select id="material"></select>
       </div>
+      <div class="row">
+        <label><input type="checkbox" id="gammaOverrideChk" /> Προσαρμοσμένη γ/2π</label>
+        <input id="gammaOverride" type="number" step="any" placeholder="π.χ. 11.094266" />
+        <select id="gammaUnits">
+          <option value="MHz/T" selected>MHz/T</option>
+          <option value="Hz/T">Hz/T</option>
+        </select>
+        <span class="muted">(Για απόλυτη ακρίβεια εισάγετε επίσημη τιμή)</span>
+      </div>
       <details>
         <summary>Πίνακας γυρομαγνητικών λόγων</summary>
         <div id="gammaTable"></div>
@@ -45,6 +54,14 @@
       <div class="row">
         <button id="btnGeolocate">Χρήση τρέχουσας τοποθεσίας</button>
         <span id="geoStatus" class="muted"></span>
+      </div>
+
+      <div class="row">
+        <label for="dt">Ημερομηνία/Ώρα (τοπική):</label>
+        <input id="dt" type="datetime-local" />
+        <label for="altitude">Υψόμετρο:</label>
+        <input id="altitude" type="number" step="any" placeholder="0" />
+        <span class="muted">m</span>
       </div>
 
       <div class="row">

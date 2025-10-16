@@ -53,7 +53,8 @@ app.get('/api/field/noaa', async (req, res) => {
     }
 
     const decYear = dateToDecimalYear(date);
-    const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculate?lat1=${lat}&lon1=${lon}&model=WMM&startYear=${decYear}&endYear=${decYear}&coordUnits=DD&altitude=${alt}&resultFormat=json`;
+    const altKm = Number.isFinite(alt) ? alt / 1000 : 0;
+    const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculate?lat1=${lat}&lon1=${lon}&model=WMM&startYear=${decYear}&endYear=${decYear}&coordUnits=DD&altitude=${altKm}&altitudeUnits=KILOMETERS&resultFormat=json`;
 
     const r = await fetch(url, {
       headers: { 'User-Agent': 'larmor-app/1.0 (+contact@example.com)' }
@@ -67,7 +68,7 @@ app.get('/api/field/noaa', async (req, res) => {
     }
 
     const totalT = totalNT * 1e-9;
-    res.json({ provider: 'NOAA', lat, lon, date: date.toISOString(), totalIntensityT: totalT, units: 'T', raw: result });
+    res.json({ provider: 'NOAA', lat, lon, altitudeMeters: alt, date: date.toISOString(), decimalYear: decYear, totalIntensityT: totalT, units: 'T', raw: result });
   } catch (err) {
     res.status(502).json({ error: 'Αποτυχία κλήσης NOAA', details: String(err) });
   }
@@ -86,12 +87,31 @@ app.get('/api/field/bgs', async (req, res) => {
     }
 
     const iso = date.toISOString();
-    const url = `https://geomag.bgs.ac.uk/web_service/GMModels/wmm/2020-2025?latitude=${lat}&longitude=${lon}&altitude=${alt}&date=${encodeURIComponent(iso)}&format=json`;
+    const altKm = Number.isFinite(alt) ? alt / 1000 : 0;
 
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'larmor-app/1.0 (+contact@example.com)' }
-    });
-    const data = await r.json();
+    // Try latest model first, then fallbacks
+    const urlCandidates = [
+      `https://geomag.bgs.ac.uk/web_service/GMModels/wmm/latest?latitude=${lat}&longitude=${lon}&altitude=${altKm}&date=${encodeURIComponent(iso)}&format=json`,
+      `https://geomag.bgs.ac.uk/web_service/GMModels/wmm/2025?latitude=${lat}&longitude=${lon}&altitude=${altKm}&date=${encodeURIComponent(iso)}&format=json`,
+      `https://geomag.bgs.ac.uk/web_service/GMModels/wmm/2025-2030?latitude=${lat}&longitude=${lon}&altitude=${altKm}&date=${encodeURIComponent(iso)}&format=json`,
+      `https://geomag.bgs.ac.uk/web_service/GMModels/wmm/2020-2025?latitude=${lat}&longitude=${lon}&altitude=${altKm}&date=${encodeURIComponent(iso)}&format=json`
+    ];
+
+    let data = null;
+    let lastError = null;
+    for (const u of urlCandidates) {
+      try {
+        const r = await fetch(u, { headers: { 'User-Agent': 'larmor-app/1.0 (+contact@example.com)' } });
+        if (!r.ok) { lastError = `HTTP ${r.status}`; continue; }
+        data = await r.json();
+        if (data) break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (!data) {
+      return res.status(502).json({ error: 'Αποτυχία κλήσης BGS', details: String(lastError) });
+    }
 
     const result = data && data.result ? data.result : data;
     const totalNT = result.total_intensity || result['total-intensity'] || result.F;
@@ -100,7 +120,7 @@ app.get('/api/field/bgs', async (req, res) => {
     }
 
     const totalT = totalNT * 1e-9;
-    res.json({ provider: 'BGS', lat, lon, date: iso, totalIntensityT: totalT, units: 'T', raw: result });
+    res.json({ provider: 'BGS', lat, lon, altitudeMeters: alt, date: iso, totalIntensityT: totalT, units: 'T', raw: result });
   } catch (err) {
     res.status(502).json({ error: 'Αποτυχία κλήσης BGS', details: String(err) });
   }
