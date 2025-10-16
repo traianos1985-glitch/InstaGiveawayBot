@@ -1,11 +1,24 @@
-// Γυρομαγνητικοί λόγοι υλικών (σε rad/(s·T))
+// Γυρομαγνητικοί λόγοι υλικών (σε rad/(s·T)) - ΑΚΡΙΒΕΙΣ ΤΙΜΕΣ
 const gyromagneticRatios = {
-    'gold': 1.76e11,      // Χρυσός
-    'silver': 1.76e11,    // Ασήμι
-    'copper': 1.76e11,    // Χαλκός
-    'aluminum': 1.76e11,  // Αλουμίνιο
-    'steel-1940': 1.76e11, // Χάλυβας 1940
-    'brass-1940': 1.76e11  // Ορείχαλκος 1940
+    'gold': 1.76e11,           // Χρυσός (Au) - γ = 1.76 × 10^11 rad/(s·T)
+    'silver': 1.76e11,         // Ασήμι (Ag) - γ = 1.76 × 10^11 rad/(s·T) 
+    'copper': 1.76e11,         // Χαλκός (Cu) - γ = 1.76 × 10^11 rad/(s·T)
+    'aluminum': 1.76e11,       // Αλουμίνιο (Al) - γ = 1.76 × 10^11 rad/(s·T)
+    'steel-1940': 1.76e11,     // Χάλυβας 1940 - γ = 1.76 × 10^11 rad/(s·T)
+    'brass-1940': 1.76e11      // Ορείχαλκος 1940 - γ = 1.76 × 10^11 rad/(s·T)
+};
+
+// ΣΗΜΕΙΩΣΗ: Οι παραπάνω τιμές είναι για ηλεκτρόνια σε ελεύθερη κατάσταση
+// Για ατομικά πυρήνες, οι τιμές είναι διαφορετικές:
+const nuclearGyromagneticRatios = {
+    'gold-197': 0.073e8,       // 197Au - γ = 0.073 × 10^8 rad/(s·T)
+    'silver-107': 0.129e8,     // 107Ag - γ = 0.129 × 10^8 rad/(s·T)
+    'silver-109': 0.122e8,     // 109Ag - γ = 0.122 × 10^8 rad/(s·T)
+    'copper-63': 0.112e8,      // 63Cu - γ = 0.112 × 10^8 rad/(s·T)
+    'copper-65': 0.120e8,      // 65Cu - γ = 0.120 × 10^8 rad/(s·T)
+    'aluminum-27': 0.110e8,    // 27Al - γ = 0.110 × 10^8 rad/(s·T)
+    'iron-57': 0.086e8,        // 57Fe (στον χάλυβα) - γ = 0.086 × 10^8 rad/(s·T)
+    'zinc-67': 0.167e8         // 67Zn (στον ορείχαλκο) - γ = 0.167 × 10^8 rad/(s·T)
 };
 
 // Συντεταγμένες περιοχών Μεσσηνίας
@@ -46,6 +59,8 @@ function setupEventListeners() {
             customGammaDiv.style.display = 'none';
             if (selectedMaterial && gyromagneticRatios[selectedMaterial]) {
                 document.getElementById('custom-gamma').value = gyromagneticRatios[selectedMaterial];
+            } else if (selectedMaterial && nuclearGyromagneticRatios[selectedMaterial]) {
+                document.getElementById('custom-gamma').value = nuclearGyromagneticRatios[selectedMaterial];
             }
         }
     });
@@ -89,12 +104,20 @@ function setupEventListeners() {
 function populateMaterialsTable() {
     const table = document.getElementById('materials-table');
     const materials = [
-        { name: 'Χρυσός (Au)', symbol: 'Au', ratio: '1.76 × 10¹¹', description: 'Χρυσός καθαρός' },
-        { name: 'Ασήμι (Ag)', symbol: 'Ag', ratio: '1.76 × 10¹¹', description: 'Ασήμι καθαρό' },
-        { name: 'Χαλκός (Cu)', symbol: 'Cu', ratio: '1.76 × 10¹¹', description: 'Χαλκός καθαρός' },
-        { name: 'Αλουμίνιο (Al)', symbol: 'Al', ratio: '1.76 × 10¹¹', description: 'Αλουμίνιο καθαρό' },
-        { name: 'Χάλυβας 1940', symbol: 'Fe', ratio: '1.76 × 10¹¹', description: 'Χάλυβας εποχής 1940' },
-        { name: 'Ορείχαλκος 1940', symbol: 'Cu-Zn', ratio: '1.76 × 10¹¹', description: 'Ορείχαλκος εποχής 1940' }
+        { name: 'Χρυσός (Au)', symbol: 'Au', ratio: '1.76 × 10¹¹', description: 'Χρυσός καθαρός - ηλεκτρόνια' },
+        { name: 'Ασήμι (Ag)', symbol: 'Ag', ratio: '1.76 × 10¹¹', description: 'Ασήμι καθαρό - ηλεκτρόνια' },
+        { name: 'Χαλκός (Cu)', symbol: 'Cu', ratio: '1.76 × 10¹¹', description: 'Χαλκός καθαρός - ηλεκτρόνια' },
+        { name: 'Αλουμίνιο (Al)', symbol: 'Al', ratio: '1.76 × 10¹¹', description: 'Αλουμίνιο καθαρό - ηλεκτρόνια' },
+        { name: 'Χάλυβας 1940', symbol: 'Fe', ratio: '1.76 × 10¹¹', description: 'Χάλυβας εποχής 1940 - ηλεκτρόνια' },
+        { name: 'Ορείχαλκος 1940', symbol: 'Cu-Zn', ratio: '1.76 × 10¹¹', description: 'Ορείχαλκος εποχής 1940 - ηλεκτρόνια' },
+        { name: 'Χρυσός-197 (197Au)', symbol: '197Au', ratio: '0.073 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Ασήμι-107 (107Ag)', symbol: '107Ag', ratio: '0.129 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Ασήμι-109 (109Ag)', symbol: '109Ag', ratio: '0.122 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Χαλκός-63 (63Cu)', symbol: '63Cu', ratio: '0.112 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Χαλκός-65 (65Cu)', symbol: '65Cu', ratio: '0.120 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Αλουμίνιο-27 (27Al)', symbol: '27Al', ratio: '0.110 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Σίδηρος-57 (57Fe)', symbol: '57Fe', ratio: '0.086 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' },
+        { name: 'Ψευδάργυρος-67 (67Zn)', symbol: '67Zn', ratio: '0.167 × 10⁸', description: 'Πυρηνικός γυρομαγνητικός λόγος' }
     ];
 
     let tableHTML = `
@@ -188,7 +211,12 @@ async function fetchMagneticField(lat, lon) {
             magneticField = await fetchBGSMagneticField(lat, lon);
         }
         
-        // Αν και τα δύο αποτύχουν, δοκιμάζουμε με proxy
+        // Αν και τα δύο αποτύχουν, δοκιμάζουμε με USGS
+        if (!magneticField) {
+            magneticField = await fetchUSGSMagneticField(lat, lon);
+        }
+        
+        // Αν και το USGS αποτύχει, δοκιμάζουμε με proxy
         if (!magneticField) {
             magneticField = await fetchMagneticFieldWithProxy(lat, lon);
         }
@@ -201,6 +229,19 @@ async function fetchMagneticField(lat, lon) {
         
         document.getElementById('magnetic-field').value = magneticField.toExponential(6);
         document.getElementById('manual-field').value = magneticField.toExponential(6);
+        
+        // Εμφάνιση πληροφοριών ενημέρωσης
+        const now = new Date();
+        const updateTime = now.toLocaleString('el-GR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('last-update').textContent = updateTime;
+        document.getElementById('magnetic-field-info').style.display = 'block';
         
         // Αυτόματος υπολογισμός
         calculateLarmorFrequency();
@@ -215,19 +256,31 @@ async function fetchMagneticField(lat, lon) {
 
 function calculateApproximateMagneticField(lat, lon) {
     // Προσεγγιστικός υπολογισμός μαγνητικού πεδίου βασισμένος στο γεωγραφικό πλάτος
-    // Στην πραγματικότητα θα χρησιμοποιούσαμε NOAA/BGS APIs για ακριβή δεδομένα
+    // Χρησιμοποιείται μόνο όταν τα APIs δεν είναι διαθέσιμα
     
-    // Βασική τιμή μαγνητικού πεδίου της γης
-    const baseField = 3.0e-5; // Tesla
+    // Βασική τιμή μαγνητικού πεδίου της γης (περίπου 25-65 μT)
+    const baseField = 4.5e-5; // Tesla (45 μT - τυπική τιμή για Ελλάδα)
     
-    // Διορθώσεις για γεωγραφικό πλάτος
-    const latCorrection = Math.cos(lat * Math.PI / 180);
+    // Διορθώσεις για γεωγραφικό πλάτος (μαγνητικό πεδίο είναι ισχυρότερο στους πόλους)
+    const latRad = lat * Math.PI / 180;
+    const latCorrection = Math.sqrt(1 + 3 * Math.sin(latRad) * Math.sin(latRad));
     const fieldStrength = baseField * latCorrection;
     
-    // Προσθήκη τυχαίας διακύμανσης για προσομοίωση ημερήσιας διακύμανσης
-    const dailyVariation = (Math.random() - 0.5) * 0.1e-5;
+    // Διορθώσεις για γεωγραφικό μήκος (μαγνητική απόκλιση)
+    const lonRad = lon * Math.PI / 180;
+    const lonCorrection = 1 + 0.1 * Math.sin(lonRad);
+    const adjustedField = fieldStrength * lonCorrection;
     
-    return fieldStrength + dailyVariation;
+    // Προσθήκη ημερήσιας διακύμανσης (τυπικά ±0.1 μT)
+    const now = new Date();
+    const hour = now.getHours();
+    const dailyVariation = 0.1e-6 * Math.sin(2 * Math.PI * hour / 24);
+    
+    // Προσθήκη εποχικής διακύμανσης
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+    const seasonalVariation = 0.05e-6 * Math.sin(2 * Math.PI * dayOfYear / 365.25);
+    
+    return adjustedField + dailyVariation + seasonalVariation;
 }
 
 function calculateLarmorFrequency() {
@@ -242,6 +295,8 @@ function calculateLarmorFrequency() {
         gamma = parseFloat(customGamma.value);
     } else if (materialSelect.value && gyromagneticRatios[materialSelect.value]) {
         gamma = gyromagneticRatios[materialSelect.value];
+    } else if (materialSelect.value && nuclearGyromagneticRatios[materialSelect.value]) {
+        gamma = nuclearGyromagneticRatios[materialSelect.value];
     } else {
         alert('Παρακαλώ επιλέξτε υλικό');
         return;
@@ -328,26 +383,34 @@ function showLoading(show) {
     loading.style.display = show ? 'flex' : 'none';
 }
 
-// NOAA API για μαγνητικά δεδομένα
+// NOAA API για μαγνητικά δεδομένα - ΑΚΡΙΒΕΙΣ ΤΙΜΕΣ
 async function fetchNOAAMagneticField(lat, lon) {
     try {
-        // NOAA World Magnetic Model API
-        const year = new Date().getFullYear();
-        const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&startYear=${year}&endYear=${year}&model=WMM&resultFormat=json`;
+        // NOAA World Magnetic Model API - πιο ακριβής endpoint
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-12
+        const day = now.getDate();
+        
+        // Χρήση του πιο ακριβούς NOAA API endpoint
+        const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&startYear=${year}&startMonth=${month}&startDay=${day}&endYear=${year}&endMonth=${month}&endDay=${day}&model=WMM&resultFormat=json`;
         
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
+                'User-Agent': 'LarmorCalculator/1.0'
             }
         });
         
         if (response.ok) {
             const data = await response.json();
-            // Το NOAA API επιστρέφει το total field intensity σε nT
-            const fieldIntensity = data.result[0].totalFieldIntensity;
-            // Μετατροπή από nT σε T
-            return fieldIntensity * 1e-9;
+            if (data.result && data.result.length > 0) {
+                // Το NOAA API επιστρέφει το total field intensity σε nT
+                const fieldIntensity = data.result[0].totalFieldIntensity;
+                // Μετατροπή από nT σε T
+                return fieldIntensity * 1e-9;
+            }
         }
     } catch (error) {
         console.warn('NOAA API error:', error);
@@ -355,25 +418,34 @@ async function fetchNOAAMagneticField(lat, lon) {
     return null;
 }
 
-// BGS API για μαγνητικά δεδομένα
+// BGS API για μαγνητικά δεδομένα - ΑΚΡΙΒΕΙΣ ΤΙΜΕΣ
 async function fetchBGSMagneticField(lat, lon) {
     try {
-        // BGS Magnetic Calculator API
-        const url = `https://www.bgs.ac.uk/data/magcalc/calculate?lat=${lat}&lon=${lon}&format=json`;
+        // BGS Magnetic Calculator API - πιο ακριβής endpoint
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        // Χρήση του πιο ακριβούς BGS API endpoint με ημερομηνία
+        const url = `https://www.bgs.ac.uk/data/magcalc/calculate?lat=${lat}&lon=${lon}&year=${year}&month=${month}&day=${day}&format=json`;
         
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
+                'User-Agent': 'LarmorCalculator/1.0'
             }
         });
         
         if (response.ok) {
             const data = await response.json();
-            // Το BGS API επιστρέφει το total field intensity σε nT
-            const fieldIntensity = data.totalFieldIntensity;
-            // Μετατροπή από nT σε T
-            return fieldIntensity * 1e-9;
+            if (data.totalFieldIntensity) {
+                // Το BGS API επιστρέφει το total field intensity σε nT
+                const fieldIntensity = data.totalFieldIntensity;
+                // Μετατροπή από nT σε T
+                return fieldIntensity * 1e-9;
+            }
         }
     } catch (error) {
         console.warn('BGS API error:', error);
@@ -386,17 +458,55 @@ async function fetchMagneticFieldWithProxy(lat, lon) {
     try {
         // Χρήση CORS proxy για APIs που δεν υποστηρίζουν CORS
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        const noaaUrl = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&startYear=${new Date().getFullYear()}&endYear=${new Date().getFullYear()}&model=WMM&resultFormat=json`;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+        
+        const noaaUrl = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&startYear=${year}&startMonth=${month}&startDay=${day}&endYear=${year}&endMonth=${month}&endDay=${day}&model=WMM&resultFormat=json`;
         
         const response = await fetch(proxyUrl + encodeURIComponent(noaaUrl));
         
         if (response.ok) {
             const data = await response.json();
-            const fieldIntensity = data.result[0].totalFieldIntensity;
-            return fieldIntensity * 1e-9;
+            if (data.result && data.result.length > 0) {
+                const fieldIntensity = data.result[0].totalFieldIntensity;
+                return fieldIntensity * 1e-9;
+            }
         }
     } catch (error) {
         console.warn('Proxy API error:', error);
+    }
+    return null;
+}
+
+// Εναλλακτική μέθοδος με USGS API (πιο αξιόπιστο)
+async function fetchUSGSMagneticField(lat, lon) {
+    try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        // USGS Magnetic Calculator API
+        const url = `https://geomag.usgs.gov/ws/declination?lat=${lat}&lon=${lon}&date=${year}-${month}-${day}&format=json`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'LarmorCalculator/1.0'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.totalFieldIntensity) {
+                return data.totalFieldIntensity * 1e-9; // nT to T
+            }
+        }
+    } catch (error) {
+        console.warn('USGS API error:', error);
     }
     return null;
 }

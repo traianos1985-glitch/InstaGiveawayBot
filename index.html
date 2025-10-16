@@ -22,12 +22,24 @@
                     <label for="material-select">Υλικό:</label>
                     <select id="material-select">
                         <option value="">Επιλέξτε υλικό</option>
-                        <option value="gold">Χρυσός (Au)</option>
-                        <option value="silver">Ασήμι (Ag)</option>
-                        <option value="copper">Χαλκός (Cu)</option>
-                        <option value="aluminum">Αλουμίνιο (Al)</option>
-                        <option value="steel-1940">Χάλυβας 1940</option>
-                        <option value="brass-1940">Ορείχαλκος 1940</option>
+                        <optgroup label="Ηλεκτρόνια (Ελεύθερα)">
+                            <option value="gold">Χρυσός (Au) - ηλεκτρόνια</option>
+                            <option value="silver">Ασήμι (Ag) - ηλεκτρόνια</option>
+                            <option value="copper">Χαλκός (Cu) - ηλεκτρόνια</option>
+                            <option value="aluminum">Αλουμίνιο (Al) - ηλεκτρόνια</option>
+                            <option value="steel-1940">Χάλυβας 1940 - ηλεκτρόνια</option>
+                            <option value="brass-1940">Ορείχαλκος 1940 - ηλεκτρόνια</option>
+                        </optgroup>
+                        <optgroup label="Πυρηνικοί Λόγοι">
+                            <option value="gold-197">Χρυσός-197 (197Au)</option>
+                            <option value="silver-107">Ασήμι-107 (107Ag)</option>
+                            <option value="silver-109">Ασήμι-109 (109Ag)</option>
+                            <option value="copper-63">Χαλκός-63 (63Cu)</option>
+                            <option value="copper-65">Χαλκός-65 (65Cu)</option>
+                            <option value="aluminum-27">Αλουμίνιο-27 (27Al)</option>
+                            <option value="iron-57">Σίδηρος-57 (57Fe)</option>
+                            <option value="zinc-67">Ψευδάργυρος-67 (67Zn)</option>
+                        </optgroup>
                         <option value="custom">Προσαρμοσμένο</option>
                     </select>
                 </div>
@@ -65,6 +77,9 @@
                     <label for="magnetic-field">Μαγνητικό Πεδίο (B) [T]:</label>
                     <input type="number" id="magnetic-field" step="0.000001" placeholder="Αυτόματη λήψη">
                     <button id="fetch-magnetic-field" class="fetch-btn">Λήψη Τρέχουσας Τιμής</button>
+                    <div id="magnetic-field-info" class="field-info" style="display: none;">
+                        <small>Τελευταία ενημέρωση: <span id="last-update"></span></small>
+                    </div>
                 </div>
 
                 <div class="input-group">

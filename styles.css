@@ -100,6 +100,12 @@ header h1 {
     background: #38a169;
 }
 
+.field-info {
+    margin-top: 5px;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
 .calculate-btn {
     width: 100%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
