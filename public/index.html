@@ -98,11 +98,18 @@
         </select>
       </div>
       <div class="row">
+        <label for="targetMode">Τρόπος στόχου:</label>
+        <select id="targetMode">
+          <option value="coins" selected>Νομίσματα</option>
+          <option value="mass">Μάζα</option>
+        </select>
+      </div>
+      <div class="row">
         <label for="soilSigma">Αγωγιμότητα εδάφους σ:</label>
         <input id="soilSigma" type="number" step="any" placeholder="0.01" />
         <span class="muted">S/m (τυπικά 0.001–0.1)</span>
       </div>
-      <div class="row">
+      <div class="row" id="coinsRow1">
         <label for="targetDepth">Βάθος στόχου z:</label>
         <input id="targetDepth" type="number" step="any" placeholder="0.5" />
         <span class="muted">m</span>
@@ -112,12 +119,32 @@
         <input id="burialYears" type="number" step="1" placeholder="85" />
         <span class="muted">(π.χ. από τη δεκαετία του 1940)</span>
       </div>
-      <div class="row">
+      <div class="row" id="coinsRow2">
         <label for="coinCount">Πλήθος νομισμάτων:</label>
         <input id="coinCount" type="number" step="1" min="1" value="1" />
         <label for="coinDiameter">Διάμετρος νομίσματος:</label>
         <input id="coinDiameter" type="number" step="any" value="22.05" />
         <span class="muted">mm (Λίρα Αγγλίας ≈ 22.05)</span>
+      </div>
+      <div class="row" id="massRow1" style="display:none">
+        <label for="massKg">Μάζα στόχου:</label>
+        <input id="massKg" type="number" step="any" placeholder="95.9" />
+        <span class="muted">kg (π.χ. 12.000 λίρες ≈ 95.9 kg)</span>
+      </div>
+      <div class="row" id="massRow2" style="display:none">
+        <label for="density">Πυκνότητα υλικού:</label>
+        <input id="density" type="number" step="any" value="17.7" />
+        <span class="muted">g/cm³ (Χρυσός 22K ≈ 17.7)</span>
+      </div>
+      <div class="row" id="massRow3" style="display:none">
+        <label for="shape">Σχήμα:</label>
+        <select id="shape">
+          <option value="sphere" selected>Σφαίρα (ισοδύναμο συσσωμάτωμα)</option>
+          <option value="disc">Δίσκος (στοίβα/στρώση)</option>
+        </select>
+        <label for="thickness">Πάχος δίσκου:</label>
+        <input id="thickness" type="number" step="any" value="20" />
+        <span class="muted">mm</span>
       </div>
       <div class="row">
         <label for="threshold">Κατώφλι ευαισθησίας (ευρετικό):</label>

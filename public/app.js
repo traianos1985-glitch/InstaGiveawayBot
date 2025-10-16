@@ -170,14 +170,61 @@ function estimateSearchRadius(freqHz, sigma, depthM, coinCount, coinDiameterMm, 
 }
 
 function bindGeophysicsUI() {
+  const modeSel = document.getElementById('targetMode');
+  const coinsRow1 = document.getElementById('coinsRow1');
+  const coinsRow2 = document.getElementById('coinsRow2');
+  const massRow1 = document.getElementById('massRow1');
+  const massRow2 = document.getElementById('massRow2');
+  const massRow3 = document.getElementById('massRow3');
+  function updateMode() {
+    const m = modeSel.value;
+    const isMass = m === 'mass';
+    coinsRow1.style.display = isMass ? 'none' : '';
+    coinsRow2.style.display = isMass ? 'none' : '';
+    massRow1.style.display = isMass ? '' : 'none';
+    massRow2.style.display = isMass ? '' : 'none';
+    massRow3.style.display = isMass ? '' : 'none';
+  }
+  modeSel.addEventListener('change', updateMode);
+  updateMode();
+
   el('btnGeoCalc').addEventListener('click', () => {
     const fVal = parseFloat(el('genFreq').value);
     const fUnit = el('genFreqUnits').value;
     const freqHz = unitToHz(fVal, fUnit);
     const sigma = parseFloat(el('soilSigma').value);
     const depthM = parseFloat(el('targetDepth').value);
-    const coinCount = Math.max(1, Math.floor(parseFloat(el('coinCount').value) || 1));
-    const coinDiameterMm = parseFloat(el('coinDiameter').value);
+    const mode = modeSel.value;
+    let coinCount = 1;
+    let coinDiameterMm = 22.05;
+    if (mode === 'coins') {
+      coinCount = Math.max(1, Math.floor(parseFloat(el('coinCount').value) || 1));
+      coinDiameterMm = parseFloat(el('coinDiameter').value);
+    } else {
+      const massKg = parseFloat(document.getElementById('massKg').value);
+      const rho_g_cm3 = parseFloat(document.getElementById('density').value);
+      const shape = document.getElementById('shape').value;
+      const thicknessMm = parseFloat(document.getElementById('thickness').value);
+      // Convert mass and density to volume (m^3): V = m / rho
+      const rho = rho_g_cm3 * 1000; // g/cm3 -> kg/m3 (1 g/cm3 = 1000 kg/m3)
+      const V = (massKg > 0 && rho > 0) ? (massKg / rho) : NaN;
+      let areaM2 = NaN;
+      if (shape === 'sphere') {
+        // sphere: V = 4/3 π r^3 => r = (3V/4π)^(1/3), effective area proxy use π r^2
+        const r = Math.cbrt((3 * V) / (4 * Math.PI));
+        areaM2 = Math.PI * r * r;
+      } else {
+        // disc: V = A * t => A = V / t
+        const t = (thicknessMm > 0) ? (thicknessMm / 1000) : NaN; // m
+        areaM2 = (Number.isFinite(V) && Number.isFinite(t) && t > 0) ? (V / t) : NaN;
+      }
+      // Map area to equivalent coin count/diameter proxy so we can reuse estimation
+      // Choose default coin diameter (22.05 mm) and compute equivalent count
+      coinDiameterMm = 22.05;
+      const rCoin = (coinDiameterMm / 1000) / 2;
+      const areaCoin = Math.PI * rCoin * rCoin;
+      coinCount = Number.isFinite(areaM2) && areaCoin > 0 ? Math.max(1, Math.round(areaM2 / areaCoin)) : 1;
+    }
     const threshold = parseFloat(el('threshold').value);
     const burialYears = Math.max(0, Math.floor(parseFloat(el('burialYears').value || '80')));
 
