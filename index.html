@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Larmor Frequency Calculator - Μεσσηνία</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Υπολογιστής Συχνότητας Larmor</h1>
+            <p class="subtitle">Για την περιοχή της Μεσσηνίας</p>
+        </header>
+
+        <div class="main-content">
+            <div class="calculator-section">
+                <h2>Υπολογιστής</h2>
+                
+                <div class="input-group">
+                    <label for="material-select">Υλικό:</label>
+                    <select id="material-select">
+                        <option value="">Επιλέξτε υλικό</option>
+                        <option value="gold">Χρυσός (Au)</option>
+                        <option value="silver">Ασήμι (Ag)</option>
+                        <option value="copper">Χαλκός (Cu)</option>
+                        <option value="aluminum">Αλουμίνιο (Al)</option>
+                        <option value="steel-1940">Χάλυβας 1940</option>
+                        <option value="brass-1940">Ορείχαλκος 1940</option>
+                        <option value="custom">Προσαρμοσμένο</option>
+                    </select>
+                </div>
+
+                <div class="input-group" id="custom-gyromagnetic" style="display: none;">
+                    <label for="custom-gamma">Γυρομαγνητικός Λόγος (γ) [rad/(s·T)]:</label>
+                    <input type="number" id="custom-gamma" step="0.000001" placeholder="π.χ. 1.76e11">
+                </div>
+
+                <div class="input-group">
+                    <label for="location-select">Τοποθεσία:</label>
+                    <select id="location-select">
+                        <option value="">Επιλέξτε τοποθεσία</option>
+                        <option value="current">Τρέχουσα τοποθεσία (GPS)</option>
+                        <option value="kyparissia">Κυπαρισσία</option>
+                        <option value="filiatra">Φιλιατρά</option>
+                        <option value="mali">Μάλη</option>
+                        <option value="siderokastro">Σιδηρόκαστρο</option>
+                        <option value="platania">Πλατάνια</option>
+                        <option value="karyes">Καρυές</option>
+                        <option value="stasio">Στασιό</option>
+                        <option value="mouzaki">Μουζάκι</option>
+                        <option value="custom-location">Προσαρμοσμένη τοποθεσία</option>
+                    </select>
+                </div>
+
+                <div class="input-group" id="custom-location" style="display: none;">
+                    <label for="custom-lat">Γεωγραφικό Πλάτος:</label>
+                    <input type="number" id="custom-lat" step="0.000001" placeholder="π.χ. 37.251">
+                    <label for="custom-lon">Γεωγραφικό Μήκος:</label>
+                    <input type="number" id="custom-lon" step="0.000001" placeholder="π.χ. 21.673">
+                </div>
+
+                <div class="input-group">
+                    <label for="magnetic-field">Μαγνητικό Πεδίο (B) [T]:</label>
+                    <input type="number" id="magnetic-field" step="0.000001" placeholder="Αυτόματη λήψη">
+                    <button id="fetch-magnetic-field" class="fetch-btn">Λήψη Τρέχουσας Τιμής</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="manual-field">Ή εισάγετε χειροκίνητα:</label>
+                    <input type="number" id="manual-field" step="0.000001" placeholder="π.χ. 4.5e-5">
+                </div>
+
+                <button id="calculate-btn" class="calculate-btn">Υπολογισμός</button>
+            </div>
+
+            <div class="results-section">
+                <h2>Αποτελέσματα</h2>
+                
+                <div class="result-card">
+                    <h3>Συχνότητα Larmor</h3>
+                    <div class="result-value" id="larmor-frequency">-</div>
+                    <div class="result-unit">Hz</div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Συχνότητα Larmor</h3>
+                    <div class="result-value" id="larmor-frequency-mhz">-</div>
+                    <div class="result-unit">MHz</div>
+                </div>
+
+                <div class="harmonics-section">
+                    <h3>Αρμονικές Συχνότητες (9-50 MHz)</h3>
+                    <div class="harmonics-table" id="harmonics-table">
+                        <div class="table-header">
+                            <div>Αρμονική</div>
+                            <div>Συχνότητα (Hz)</div>
+                            <div>Συχνότητα (MHz)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>Πληροφορίες Υλικών</h2>
+            <div class="materials-table" id="materials-table">
+                <!-- Θα συμπληρωθεί από JavaScript -->
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>Περιοχές Μεσσηνίας</h2>
+            <div class="locations-table" id="locations-table">
+                <!-- Θα συμπληρωθεί από JavaScript -->
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Λήψη δεδομένων μαγνητικού πεδίου...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
