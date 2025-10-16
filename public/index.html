@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Υπολογιστής Συχνότητας Larmor</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Υπολογιστής Συχνότητας Larmor</h1>
+    <p>Ζωντανές τιμές γεωμαγνητικού πεδίου (NOAA & BGS) και πίνακες σταθερών.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Σταθερές</h2>
+      <div class="row">
+        <label for="material">Υλικό (πυρήνας, γ/2π σε Hz/T):</label>
+        <select id="material"></select>
+      </div>
+      <details>
+        <summary>Πίνακας γυρομαγνητικών λόγων</summary>
+        <div id="gammaTable"></div>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>Πεδίο B (Γη)</h2>
+      <div class="row">
+        <label for="source">Πηγή:</label>
+        <select id="source">
+          <option value="noaa">NOAA</option>
+          <option value="bgs">BGS</option>
+          <option value="avg">Μέσος όρος NOAA & BGS</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="place">Περιοχές Μεσσηνίας:</label>
+        <select id="place"></select>
+        <button id="btnFetchPlace">Λήψη πεδίου</button>
+      </div>
+
+      <div class="row">
+        <button id="btnGeolocate">Χρήση τρέχουσας τοποθεσίας</button>
+        <span id="geoStatus" class="muted"></span>
+      </div>
+
+      <div class="row">
+        <label for="bValue">Τιμή B:</label>
+        <input id="bValue" type="number" step="any" />
+        <select id="bUnits">
+          <option value="T">T</option>
+          <option value="uT" selected>μT</option>
+        </select>
+        <span class="muted" id="providerInfo"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Υπολογισμός</h2>
+      <div class="row">
+        <button id="btnCalc">Υπολόγισε f<sub>L</sub></button>
+      </div>
+      <div id="result"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Αρμονικές (9–50 MHz)</h2>
+      <div id="harmonics"></div>
+    </section>
+
+    <section class="panel muted small">
+      <h2>Πηγές δεδομένων</h2>
+      <ul>
+        <li>NOAA NCEI World Magnetic Model (WMM)</li>
+        <li>British Geological Survey (BGS) WMM</li>
+      </ul>
+      <p>Οι τιμές B είναι πλήρως δυναμικές ως προς ημερομηνία/ώρα και τοποθεσία.</p>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
