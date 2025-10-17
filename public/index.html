@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Larmor Frequency Calculator - Real-time Data</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .main-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .data-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .data-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .data-card h3 {
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .data-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .data-unit {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .control-group h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .frequency-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .frequency-display h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .frequency-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .frequency-details {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .chat-header h3 {
+            color: #4a5568;
+            margin-left: 10px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 90%;
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.system {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .message-header {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .message-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .chat-input button:hover {
+            background: #5a67d8;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #48bb78;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .nucleus-info {
+            background: #edf2f7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .nucleus-info h4 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .nucleus-info p {
+            color: #718096;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <div class="header">
+                <h1><i class="fas fa-atom"></i> Larmor Frequency Calculator</h1>
+                <p>Real-time nuclear magnetic resonance frequency calculation</p>
+                <div class="status-indicator"></div>
+                <span id="connectionStatus">Connected</span>
+            </div>
+
+            <div class="frequency-display">
+                <h2>Current Larmor Frequency</h2>
+                <div class="frequency-value" id="larmorFrequency">0.000 MHz</div>
+                <div class="frequency-details" id="frequencyDetails">Calculating...</div>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-card">
+                    <h3><i class="fas fa-magnet"></i> Magnetic Field</h3>
+                    <div class="data-value" id="magneticField">0.000</div>
+                    <div class="data-unit">Tesla</div>
+                </div>
+                <div class="data-card">
+                    <h3><i class="fas fa-thermometer-half"></i> Temperature</h3>
+                    <div class="data-value" id="temperature">0.0</div>
+                    <div class="data-unit">Kelvin</div>
+                </div>
+                <div class="data-card">
+                    <h3><i class="fas fa-tachometer-alt"></i> Pressure</h3>
+                    <div class="data-value" id="pressure">0</div>
+                    <div class="data-unit">Pascal</div>
+                </div>
+                <div class="data-card">
+                    <h3><i class="fas fa-clock"></i> Last Update</h3>
+                    <div class="data-value" id="lastUpdate">--:--</div>
+                    <div class="data-unit">Time</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <h3><i class="fas fa-cog"></i> Controls</h3>
+                    <div class="form-group">
+                        <label for="nucleusSelect">Nucleus Type</label>
+                        <select id="nucleusSelect">
+                            <option value="H1">Hydrogen-1 (¹H)</option>
+                            <option value="C13">Carbon-13 (¹³C)</option>
+                            <option value="N15">Nitrogen-15 (¹⁵N)</option>
+                            <option value="F19">Fluorine-19 (¹⁹F)</option>
+                            <option value="P31">Phosphorus-31 (³¹P)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldInput">Magnetic Field (T)</label>
+                        <input type="number" id="fieldInput" step="0.001" min="0.1" max="10" value="1.5">
+                    </div>
+                    <button class="btn" onclick="updateSettings()">
+                        <i class="fas fa-sync"></i> Update Settings
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <h3><i class="fas fa-info-circle"></i> Quick Actions</h3>
+                    <button class="btn" onclick="sendCommand('/status')">
+                        <i class="fas fa-chart-line"></i> Show Status
+                    </button>
+                    <button class="btn" onclick="sendCommand('/frequency')">
+                        <i class="fas fa-calculator"></i> Show Frequency
+                    </button>
+                    <button class="btn" onclick="sendCommand('/help')">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </div>
+            </div>
+
+            <div class="nucleus-info">
+                <h4 id="nucleusInfoTitle">Hydrogen-1 (¹H)</h4>
+                <p id="nucleusInfoText">
+                    The most commonly used nucleus in NMR spectroscopy. 
+                    Gyromagnetic ratio: 42.577 MHz/T. Used in most organic compounds.
+                </p>
+            </div>
+        </div>
+
+        <div class="chat-panel">
+            <div class="chat-header">
+                <i class="fas fa-comments"></i>
+                <h3>Chat Interface</h3>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type a message or command..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentData = {};
+
+        // Connection status
+        socket.on('connect', () => {
+            document.getElementById('connectionStatus').textContent = 'Connected';
+            document.querySelector('.status-indicator').style.background = '#48bb78';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.querySelector('.status-indicator').style.background = '#e53e3e';
+        });
+
+        // Initial data
+        socket.on('initialData', (data) => {
+            currentData = data;
+            updateDisplay(data);
+        });
+
+        // Real-time data updates
+        socket.on('dataUpdate', (data) => {
+            currentData = data;
+            updateDisplay(data);
+        });
+
+        // Chat messages
+        socket.on('chatHistory', (messages) => {
+            const chatContainer = document.getElementById('chatMessages');
+            chatContainer.innerHTML = '';
+            messages.forEach(message => {
+                addMessageToChat(message);
+            });
+        });
+
+        socket.on('newMessage', (message) => {
+            addMessageToChat(message);
+        });
+
+        function updateDisplay(data) {
+            document.getElementById('larmorFrequency').textContent = 
+                (data.larmorFrequency / 1e6).toFixed(3) + ' MHz';
+            
+            document.getElementById('frequencyDetails').textContent = 
+                `${data.nucleus} nucleus at ${data.magneticField.toFixed(3)} T`;
+            
+            document.getElementById('magneticField').textContent = 
+                data.magneticField.toFixed(3);
+            
+            document.getElementById('temperature').textContent = 
+                data.temperature.toFixed(1);
+            
+            document.getElementById('pressure').textContent = 
+                Math.round(data.pressure);
+            
+            document.getElementById('lastUpdate').textContent = 
+                new Date(data.timestamp).toLocaleTimeString();
+            
+            // Update nucleus info
+            updateNucleusInfo(data.nucleus);
+        }
+
+        function updateNucleusInfo(nucleus) {
+            const nucleusInfo = {
+                'H1': {
+                    title: 'Hydrogen-1 (¹H)',
+                    text: 'The most commonly used nucleus in NMR spectroscopy. Gyromagnetic ratio: 42.577 MHz/T. Used in most organic compounds.'
+                },
+                'C13': {
+                    title: 'Carbon-13 (¹³C)',
+                    text: 'Used for carbon analysis in organic compounds. Gyromagnetic ratio: 10.708 MHz/T. Natural abundance: 1.1%.'
+                },
+                'N15': {
+                    title: 'Nitrogen-15 (¹⁵N)',
+                    text: 'Used for nitrogen analysis in proteins and nucleic acids. Gyromagnetic ratio: 4.316 MHz/T. Natural abundance: 0.37%.'
+                },
+                'F19': {
+                    title: 'Fluorine-19 (¹⁹F)',
+                    text: 'Used for fluorine analysis in pharmaceuticals and materials. Gyromagnetic ratio: 40.078 MHz/T. Natural abundance: 100%.'
+                },
+                'P31': {
+                    title: 'Phosphorus-31 (³¹P)',
+                    text: 'Used for phosphorus analysis in biological systems. Gyromagnetic ratio: 17.235 MHz/T. Natural abundance: 100%.'
+                }
+            };
+
+            const info = nucleusInfo[nucleus];
+            if (info) {
+                document.getElementById('nucleusInfoTitle').textContent = info.title;
+                document.getElementById('nucleusInfoText').textContent = info.text;
+            }
+        }
+
+        function addMessageToChat(message) {
+            const chatContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.type}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    ${message.user} • ${new Date(message.timestamp).toLocaleTimeString()}
+                </div>
+                <div class="message-text">${message.text}</div>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                socket.emit('chatMessage', {
+                    text: message,
+                    user: 'User'
+                });
+                input.value = '';
+            }
+        }
+
+        function sendCommand(command) {
+            socket.emit('chatMessage', {
+                text: command,
+                user: 'User'
+            });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function updateSettings() {
+            const nucleus = document.getElementById('nucleusSelect').value;
+            const field = parseFloat(document.getElementById('fieldInput').value);
+            
+            if (field > 0) {
+                socket.emit('setMagneticField', field);
+            }
+            socket.emit('changeNucleus', nucleus);
+        }
+
+        // Initialize display
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNucleusInfo('H1');
+        });
+    </script>
+</body>
+</html>
