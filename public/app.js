@@ -333,6 +333,38 @@ function initSurvey() {
     lastGPS: null,
   };
 
+  // Map init
+  let map = null; let markers = []; let targetMarker = null;
+  function ensureMap() {
+    if (map) return map;
+    map = L.map('map');
+    // Try geolocation to center map
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos)=>{
+        map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      },()=>{ map.setView([37.245, 21.67], 11); });
+    } else {
+      map.setView([37.245, 21.67], 11);
+    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    map.on('click', async (e) => {
+      // On map click, use it as lastGPS and optional quick add if bearing given
+      survey.lastGPS = { lat: e.latlng.lat, lon: e.latlng.lng };
+      addMarker(e.latlng.lat, e.latlng.lng, 'Σημείο');
+    });
+    return map;
+  }
+  ensureMap();
+
+  function addMarker(lat, lon, label) {
+    const m = L.marker([lat, lon], { title: label });
+    m.addTo(map).bindPopup(label);
+    markers.push(m);
+  }
+
   async function getDeclinationAt(lat, lon) {
     // Use both providers and average
     const dtVal = document.getElementById('dt').value;
@@ -450,6 +482,8 @@ function initSurvey() {
     };
     survey.points.push(point);
     renderSurveyList();
+    ensureMap();
+    addMarker(point.lat, point.lon, `P${survey.points.length}: ${point.bearingTrueDeg.toFixed(1)}°`);
   }
 
   function renderSurveyList() {
@@ -492,6 +526,13 @@ function initSurvey() {
     `;
     // Live compass guidance (if available)
     setupCompass(off.bearingDeg);
+    ensureMap();
+    if (targetMarker) { map.removeLayer(targetMarker); targetMarker = null; }
+    targetMarker = L.marker([res.lat, res.lon], { title: 'Στόχος' })
+      .addTo(map)
+      .bindPopup('Εκτιμώμενος στόχος')
+      .openPopup();
+    map.flyTo([res.lat, res.lon], 17);
   }
 
   function setupCompass(targetTrueBearingDeg) {

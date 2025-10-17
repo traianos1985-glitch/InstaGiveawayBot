@@ -17,3 +17,5 @@ button:hover { background: #15224a; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid #2a3b70; padding: 8px; text-align: left; }
 th { background: #0f1a38; }
+
+#map { height: 360px; border: 1px solid #22315b; border-radius: 8px; }
