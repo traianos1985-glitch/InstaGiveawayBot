@@ -13,7 +13,9 @@
   let targetMarker = null;
   let follow = true;
   let watchId = null;
-  let magHeadingDeg = null;
+  let magHeadingDeg = null; // magnetic or device-provided true heading approximation
+  let magnetometer = null; // Generic Sensor API
+  let obs = []; // {lat,lon, trueHeading, ts}
 
   const el = (id)=>document.getElementById(id);
   const outLat=el('outLat'), outLon=el('outLon'), outAcc=el('outAcc');
@@ -21,6 +23,12 @@
   const outDev=el('outDev'), outDist=el('outDist');
   const chkFollow=el('chkFollow');
   const inpDecl=el('inpDecl');
+  const inpManualHead=el('inpManualHead');
+  const outWmmD=el('outWmmD'), outWmmI=el('outWmmI'), outWmmH=el('outWmmH'), outWmmF=el('outWmmF');
+  const outWmmX=el('outWmmX'), outWmmY=el('outWmmY'), outWmmZ=el('outWmmZ');
+  const outWmmMeta=el('outWmmMeta');
+  const outBx=el('outBx'), outBy=el('outBy'), outBz=el('outBz'), outBmag=el('outBmag');
+  const outObsCount=el('outObsCount'), outSolve=el('outSolve');
 
   chkFollow.addEventListener('change', ()=>{ follow = chkFollow.checked; });
 
@@ -64,7 +72,12 @@
   function recompute(){
     if(!currentPos){ return; }
     const decl = parseFloat(inpDecl.value||'0')||0;
-    const headingMag = (magHeadingDeg==null)? null : wrap360(magHeadingDeg);
+    let headingMag = null;
+    if (inpManualHead.value && inpManualHead.value.trim() !== '') {
+      headingMag = wrap360(parseFloat(inpManualHead.value)||0);
+    } else if (magHeadingDeg!=null) {
+      headingMag = wrap360(magHeadingDeg);
+    }
     const headingTrue = (headingMag==null)? null : wrap360(headingMag + decl);
     if(headingMag!=null){ outHeadMag.textContent = headingMag.toFixed(1)+'°'; } else outHeadMag.textContent = '–';
     if(headingTrue!=null){ outHeadTrue.textContent = headingTrue.toFixed(1)+'°'; } else outHeadTrue.textContent = '–';
@@ -129,6 +142,165 @@
     }
     if(heading!=null){ magHeadingDeg = wrap360(heading); recompute(); }
   }
+
+  // Magnetometer
+  el('btnMagneto').addEventListener('click', async ()=>{
+    try{
+      const anyWin = window;
+      if (anyWin.DeviceMotionEvent && typeof anyWin.DeviceMotionEvent.requestPermission === 'function'){
+        try{ await anyWin.DeviceMotionEvent.requestPermission(); }catch{}
+      }
+      if ('Magnetometer' in window) {
+        magnetometer = new window.Magnetometer({ frequency: 10 });
+        magnetometer.addEventListener('reading', () => {
+          const bx = magnetometer.x; // µT
+          const by = magnetometer.y;
+          const bz = magnetometer.z;
+          const bmag = Math.sqrt(bx*bx + by*by + bz*bz);
+          outBx.textContent = bx.toFixed(1);
+          outBy.textContent = by.toFixed(1);
+          outBz.textContent = bz.toFixed(1);
+          outBmag.textContent = bmag.toFixed(1);
+        });
+        magnetometer.addEventListener('error', (e)=>{ console.warn('Magnetometer error', e.error || e); });
+        magnetometer.start();
+        alert('Magnetometer enabled');
+      } else {
+        alert('Magnetometer not supported on this device/browser');
+      }
+    }catch(e){ alert('Magnetometer failed'); }
+  });
+
+  // WMM predicted field (NOAA-like service). If CORS fails, user can input declination manually.
+  el('btnFetchWMM').addEventListener('click', async ()=>{
+    if(!currentPos){ alert('No position yet'); return; }
+    try{
+      const date = new Date();
+      const y = date.getUTCFullYear();
+      const url = `https://geomag.amentum.space/wmm?lat=${currentPos.lat}&lon=${currentPos.lon}&alt=0&year=${y}`;
+      const r = await fetch(url);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const d = await r.json();
+      // Expect keys: declination, inclination, H, F, X, Y, Z (deg, nT)
+      if (typeof d.declination === 'number') { inpDecl.value = d.declination.toFixed(2); }
+      outWmmD.textContent = (d.declination!=null)? d.declination.toFixed(2)+'°' : '–';
+      outWmmI.textContent = (d.inclination!=null)? d.inclination.toFixed(2)+'°' : '–';
+      outWmmH.textContent = (d.H!=null)? d.H.toFixed(0) : '–';
+      outWmmF.textContent = (d.F!=null)? d.F.toFixed(0) : '–';
+      outWmmX.textContent = (d.X!=null)? d.X.toFixed(0) : '–';
+      outWmmY.textContent = (d.Y!=null)? d.Y.toFixed(0) : '–';
+      outWmmZ.textContent = (d.Z!=null)? d.Z.toFixed(0) : '–';
+      outWmmMeta.textContent = d.model ? `${d.model} ${d.epoch||''}` : '';
+      recompute();
+    }catch(e){ alert('WMM fetch failed due to CORS or network. Enter declination manually.'); }
+  });
+
+  // Observations: store bearing lines and solve intersection (least squares).
+  function addObservation(){
+    if(!currentPos) { alert('No position'); return; }
+    const decl = parseFloat(inpDecl.value||'0')||0;
+    let headingMag = null;
+    if (inpManualHead.value && inpManualHead.value.trim() !== '') headingMag = wrap360(parseFloat(inpManualHead.value)||0);
+    else if (magHeadingDeg!=null) headingMag = wrap360(magHeadingDeg);
+    if (headingMag==null) { alert('No heading (enable compass or set manual)'); return; }
+    const trueHeading = wrap360(headingMag + decl);
+    const rec = { lat: currentPos.lat, lon: currentPos.lon, trueHeading, ts: Date.now() };
+    obs.push(rec);
+    outObsCount.textContent = String(obs.length);
+    // Draw a short ray on map
+    const len = 0.005; // ~0.5km at mid-lat
+    const brng = deg2rad(trueHeading);
+    const dx = len * Math.sin(brng);
+    const dy = len * Math.cos(brng);
+    const p1 = [rec.lon, rec.lat];
+    const p2 = [rec.lon + dx/Math.cos(deg2rad(rec.lat)), rec.lat + dy];
+    map.addSource(`ray-${rec.ts}`, { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[p1,p2] }}});
+    map.addLayer({ id:`ray-${rec.ts}`, type:'line', source:`ray-${rec.ts}`, paint:{ 'line-color':'#9c27b0', 'line-width':2, 'line-dasharray':[2,2] }});
+    persist();
+  }
+  el('btnAddObs').addEventListener('click', addObservation);
+
+  function solveTarget(){
+    if (obs.length < 2) { alert('Need at least 2 observations'); return; }
+    // Solve intersection of multiple rays using linearized least squares in local ENU around centroid.
+    const lat0 = obs.reduce((s,o)=>s+o.lat,0)/obs.length;
+    const lon0 = obs.reduce((s,o)=>s+o.lon,0)/obs.length;
+    const toENU = (lat,lon)=>{
+      const dN = (lat - lat0) * 111320; // meters per deg approx
+      const dE = (lon - lon0) * 111320 * Math.cos(deg2rad(lat0));
+      return [dE, dN];
+    };
+    const fromENU = (e,n)=>{
+      const lat = lat0 + n/111320;
+      const lon = lon0 + e/(111320*Math.cos(deg2rad(lat0)));
+      return {lat, lon};
+    };
+    // Each ray i: point pi=(ei,ni), unit direction ui=(sin b, cos b). Solve for point x minimizing sum |(x-pi) x ui|^2.
+    let A11=0, A12=0, A22=0, b1=0, b2=0;
+    for(const o of obs){
+      const [ei, ni] = toENU(o.lat, o.lon);
+      const br = deg2rad(o.trueHeading);
+      const ux = Math.sin(br), uy = Math.cos(br);
+      // Projection matrix to perpendicular of u: P = I - u u^T
+      const p11 = 1-ux*ux, p12 = -ux*uy, p22 = 1-uy*uy;
+      A11 += p11; A12 += p12; A22 += p22;
+      b1  += p11*ei + p12*ni;
+      b2  += p12*ei + p22*ni;
+    }
+    const det = A11*A22 - A12*A12;
+    if (Math.abs(det) < 1e-9) { alert('Degenerate geometry'); return; }
+    const ex = ( A22*b1 - A12*b2)/det;
+    const ny = (-A12*b1 + A11*b2)/det;
+    const sol = fromENU(ex, ny);
+    outSolve.textContent = `${sol.lat.toFixed(6)}, ${sol.lon.toFixed(6)}`;
+    // Add marker
+    new maplibregl.Marker({color:'#43a047'}).setLngLat([sol.lon, sol.lat]).addTo(map);
+    persist();
+  }
+  el('btnSolve').addEventListener('click', solveTarget);
+
+  function persist(){
+    try{
+      const data = { obs, target: targetMarker? targetMarker.getLngLat().toArray(): null };
+      localStorage.setItem('larmor_map_session', JSON.stringify(data));
+    }catch{}
+  }
+  function restore(){
+    try{
+      const raw = localStorage.getItem('larmor_map_session');
+      if(!raw) return;
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.obs)) { obs = data.obs; outObsCount.textContent = String(obs.length); }
+      if (Array.isArray(data.target) && data.target.length===2) setTarget(data.target[0], data.target[1]);
+    }catch{}
+  }
+  restore();
+
+  // Export CSV
+  el('btnExport').addEventListener('click', ()=>{
+    const rows = [['lat','lon','trueHeading_deg','timestamp']];
+    for(const o of obs){ rows.push([o.lat,o.lon,o.trueHeading,o.ts]); }
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'observations.csv';
+    a.click();
+  });
+
+  // Clear
+  el('btnClear').addEventListener('click', ()=>{
+    obs = []; outObsCount.textContent = '0'; outSolve.textContent='–';
+    // Remove ray layers
+    map.getStyle().layers.slice().forEach(layer=>{
+      if (layer.id.startsWith('ray-')) {
+        try{ map.removeLayer(layer.id); }catch{}
+        try{ map.removeSource(layer.id); }catch{}
+      }
+    });
+    // Remove green markers (solution markers): not tracked; just refresh page for full clear if needed.
+    localStorage.removeItem('larmor_map_session');
+  });
 
   // Declination fetch (NOAA WMM web service alternative). If blocked, user can enter manually.
   el('btnFetchDecl').addEventListener('click', async ()=>{

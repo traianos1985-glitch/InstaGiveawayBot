@@ -15,8 +15,15 @@
         <button id="btnUseLocation">Use my location</button>
         <label><input type="checkbox" id="chkFollow" checked> Follow me</label>
         <button id="btnCompass">Enable compass</button>
+        <button id="btnMagneto">Enable magnetometer</button>
         <label>Declination (°): <input id="inpDecl" type="number" step="0.1" value="0"></label>
         <button id="btnFetchDecl">Fetch declination</button>
+        <button id="btnFetchWMM">Fetch WMM field</button>
+        <label>Manual heading (°): <input id="inpManualHead" type="number" step="0.1" placeholder="e.g. 123.4"></label>
+        <button id="btnAddObs">Add observation</button>
+        <button id="btnSolve">Solve target</button>
+        <button id="btnExport">Export CSV</button>
+        <button id="btnClear">Clear</button>
       </div>
     </header>
 
@@ -35,8 +42,32 @@
           <div class="kv"><span>Distance</span><output id="outDist">–</output></div>
         </section>
         <section>
+          <h2>Predicted field (WMM)</h2>
+          <div class="kv"><span>Declination D</span><output id="outWmmD">–</output></div>
+          <div class="kv"><span>Inclination I</span><output id="outWmmI">–</output></div>
+          <div class="kv"><span>H (nT)</span><output id="outWmmH">–</output></div>
+          <div class="kv"><span>F (nT)</span><output id="outWmmF">–</output></div>
+          <div class="kv"><span>X (nT)</span><output id="outWmmX">–</output></div>
+          <div class="kv"><span>Y (nT)</span><output id="outWmmY">–</output></div>
+          <div class="kv"><span>Z (nT)</span><output id="outWmmZ">–</output></div>
+          <small id="outWmmMeta"></small>
+        </section>
+        <section>
+          <h2>Device magnetometer</h2>
+          <div class="kv"><span>Bx (µT)</span><output id="outBx">–</output></div>
+          <div class="kv"><span>By (µT)</span><output id="outBy">–</output></div>
+          <div class="kv"><span>Bz (µT)</span><output id="outBz">–</output></div>
+          <div class="kv"><span>|B| (µT)</span><output id="outBmag">–</output></div>
+        </section>
+        <section>
+          <h2>Observations</h2>
+          <div class="kv"><span>Count</span><output id="outObsCount">0</output></div>
+          <div class="kv"><span>Solution</span><output id="outSolve">–</output></div>
+        </section>
+        <section>
           <h2>Help</h2>
           <p>Tap on the map to set a target. Use your device location and compass to compute signed deviation. Declination is added to magnetic heading to produce true heading.</p>
+          <p>Use WMM fetch to get official predicted geomagnetic field (NOAA). Enable magnetometer to read actual B from your device (if supported). Add multiple observations (lines-of-bearing) and solve for an estimated target point.</p>
         </section>
       </aside>
     </main>
