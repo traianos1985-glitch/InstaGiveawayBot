@@ -183,8 +183,18 @@
         <input id="distance" type="number" step="any" placeholder="προαιρετικό" />
         <button id="btnUseGPS">Χρήση τρέχουσας θέσης</button>
       </div>
+      <div class="row">
+        <label for="expectedDev">Αναμενόμενη απόκλιση (m):</label>
+        <input id="expectedDev" type="number" step="any" value="30" />
+        <span class="muted">(τυπικά 10–50 m)</span>
+      </div>
       <div id="surveyList" class="small muted"></div>
       <div id="surveyResult"></div>
+      <div class="row small">
+        <label>Πυξίδα συσκευής:</label>
+        <span id="compassStatus" class="muted">—</span>
+      </div>
+      <div id="compassGuidance" class="small"></div>
       <p class="muted small">Διορθώνουμε το μαγνητικό αζιμούθιο με την τοπική απόκλιση (declination) για αληθινό βορρά.</p>
     </section>
 

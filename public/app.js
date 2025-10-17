@@ -483,11 +483,38 @@ function initSurvey() {
     const last = survey.points[survey.points.length - 1];
     const off = bearingDistance({ lat: last.lat, lon: last.lon }, { lat: res.lat, lon: res.lon });
     const dirTxt = `${off.bearingDeg.toFixed(1)}° (${cardinal(off.bearingDeg)})`;
+    const dev = parseFloat(document.getElementById('expectedDev').value) || 30;
     outEl.innerHTML = `
       <p>Εκτίμηση θέσης στόχου: <strong>${res.lat.toFixed(6)}, ${res.lon.toFixed(6)}</strong></p>
       <p>Από το τελευταίο σημείο: κίνηση <strong>${off.distanceM.toFixed(1)} m</strong> προς <strong>${dirTxt}</strong>.</p>
+      <p>Ζώνη πιθανής απόκλισης: κύκλος ακτίνας <strong>${dev.toFixed(1)} m</strong> γύρω από το εκτιμώμενο σημείο.</p>
       <p class="muted small">Η γωνία είναι ως προς τον αληθινό βορρά (διορθωμένο με declination).</p>
     `;
+    // Live compass guidance (if available)
+    setupCompass(off.bearingDeg);
+  }
+
+  function setupCompass(targetTrueBearingDeg) {
+    const statusEl = document.getElementById('compassStatus');
+    const guideEl = document.getElementById('compassGuidance');
+    if (!('ondeviceorientationabsolute' in window) && !('ondeviceorientation' in window)) {
+      statusEl.textContent = 'Δεν υποστηρίζεται από τη συσκευή.';
+      guideEl.textContent = '';
+      return;
+    }
+    statusEl.textContent = 'Σε λειτουργία… κρατήστε τη συσκευή επίπεδη.';
+    function handle(evt) {
+      const alpha = evt.absolute ? evt.alpha : evt.alpha; // degrees from device
+      if (typeof alpha !== 'number') return;
+      // Assume alpha ~ true heading (ποικίλλει ανά συσκευή/browser). Εμφάνιση σχετικής απόκλισης.
+      const heading = alpha; // deg
+      let diff = targetTrueBearingDeg - heading;
+      diff = ((diff + 540) % 360) - 180; // [-180, 180]
+      const turn = diff > 0 ? 'στρίψε δεξιά' : 'στρίψε αριστερά';
+      guideEl.innerHTML = `Κατεύθυνση στόχου: ${targetTrueBearingDeg.toFixed(0)}°. Πυξίδα: ${heading.toFixed(0)}°. ${turn} ~ ${Math.abs(diff).toFixed(0)}°.`;
+    }
+    window.addEventListener('deviceorientationabsolute', handle);
+    window.addEventListener('deviceorientation', handle);
   }
 
   document.getElementById('btnAddPoint').addEventListener('click', addPointFromUI);
