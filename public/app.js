@@ -553,10 +553,35 @@ function initSurvey() {
       diff = ((diff + 540) % 360) - 180; // [-180, 180]
       const turn = diff > 0 ? 'στρίψε δεξιά' : 'στρίψε αριστερά';
       guideEl.innerHTML = `Κατεύθυνση στόχου: ${targetTrueBearingDeg.toFixed(0)}°. Πυξίδα: ${heading.toFixed(0)}°. ${turn} ~ ${Math.abs(diff).toFixed(0)}°.`;
+      const magInput = document.getElementById('magBearing');
+      if (magInput && magInput.disabled) {
+        // populate magnetic bearing estimate by subtracting declination if available
+        // We'll store last declination from recent fetch (if any)
+        const declText = document.getElementById('declInfo').textContent;
+        const m = declText.match(/([\-\d\.]+)°/);
+        const decl = m ? parseFloat(m[1]) : 0;
+        const magBearing = ((heading - decl) % 360 + 360) % 360;
+        magInput.value = magBearing.toFixed(1);
+      }
     }
     window.addEventListener('deviceorientationabsolute', handle);
     window.addEventListener('deviceorientation', handle);
   }
+
+  // Enable compass capture to auto-fill magnetic bearing
+  document.getElementById('btnEnableCompass').addEventListener('click', async () => {
+    const statusEl = document.getElementById('compassStatus');
+    try {
+      // iOS needs permission
+      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const perm = await DeviceOrientationEvent.requestPermission();
+        if (perm !== 'granted') { statusEl.textContent = 'Άδεια πυξίδας απορρίφθηκε.'; return; }
+      }
+      statusEl.textContent = 'Πυξίδα ενεργή.';
+    } catch (e) {
+      statusEl.textContent = 'Σφάλμα ενεργοποίησης πυξίδας.';
+    }
+  });
 
   document.getElementById('btnAddPoint').addEventListener('click', addPointFromUI);
   document.getElementById('btnUseGPS').addEventListener('click', useGPS);
