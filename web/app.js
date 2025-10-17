@@ -171,28 +171,72 @@
     }catch(e){ alert('Magnetometer failed'); }
   });
 
-  // WMM predicted field (NOAA-like service). If CORS fails, user can input declination manually.
+  function decimalYear(date){
+    const y = date.getUTCFullYear();
+    const t0 = Date.UTC(y,0,1); const t1 = Date.UTC(y+1,0,1);
+    return y + (date.getTime() - t0) / (t1 - t0);
+  }
+  function applyWmmToUi(d){
+    if (typeof d.declination === 'number') { inpDecl.value = d.declination.toFixed(2); }
+    outWmmD.textContent = (d.declination!=null)? d.declination.toFixed(2)+'°' : '–';
+    outWmmI.textContent = (d.inclination!=null)? d.inclination.toFixed(2)+'°' : '–';
+    outWmmH.textContent = (d.H!=null)? d.H.toFixed(0) : '–';
+    outWmmF.textContent = (d.F!=null)? d.F.toFixed(0) : '–';
+    outWmmX.textContent = (d.X!=null)? d.X.toFixed(0) : '–';
+    outWmmY.textContent = (d.Y!=null)? d.Y.toFixed(0) : '–';
+    outWmmZ.textContent = (d.Z!=null)? d.Z.toFixed(0) : '–';
+    outWmmMeta.textContent = d.model ? `${d.model} ${d.epoch||''}` : '';
+    recompute();
+  }
+  async function fetchWmmNoaa(lat, lon){
+    const decYear = decimalYear(new Date());
+    const model = 'WMM2025';
+    // Try NOAA Geomag calculators full components
+    const base = 'https://www.ngdc.noaa.gov/geomag-web/calculators/calculate';
+    const url = `${base}?lat1=${lat}&lon1=${lon}&model=${model}&startYear=${decYear.toFixed(4)}&endYear=${decYear.toFixed(4)}&altitude=0&resultFormat=json&coordinateSystem=geodetic`;
+    const r = await fetch(url, { mode:'cors' });
+    if (!r.ok) throw new Error('NOAA HTTP '+r.status);
+    const j = await r.json();
+    // Parse typical NOAA structure
+    let res = null;
+    if (j && j.result && j.result.length > 0) res = j.result[0];
+    if (!res && Array.isArray(j)) res = j[0];
+    const out = {
+      declination: res?.declination ?? res?.D ?? res?.declinationDeg,
+      inclination: res?.inclination ?? res?.I ?? res?.inclinationDeg,
+      H: res?.horizontalIntensity ?? res?.H,
+      F: res?.totalIntensity ?? res?.F,
+      X: res?.northComponent ?? res?.X,
+      Y: res?.eastComponent ?? res?.Y,
+      Z: res?.verticalComponent ?? res?.Z,
+      model,
+      epoch: res?.epoch ?? ''
+    };
+    if (out.declination==null) throw new Error('Unexpected NOAA payload');
+    return out;
+  }
+  async function fetchWmmFallback(lat, lon){
+    const y = new Date().getUTCFullYear();
+    const url = `https://geomag.amentum.space/wmm?lat=${lat}&lon=${lon}&alt=0&year=${y}`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('Fallback HTTP '+r.status);
+    const d = await r.json();
+    return { ...d, model: d.model||'WMM', epoch: d.epoch||'' };
+  }
+  // Try NOAA official first; fallback to community; lastly manual input remains available
   el('btnFetchWMM').addEventListener('click', async ()=>{
     if(!currentPos){ alert('No position yet'); return; }
     try{
-      const date = new Date();
-      const y = date.getUTCFullYear();
-      const url = `https://geomag.amentum.space/wmm?lat=${currentPos.lat}&lon=${currentPos.lon}&alt=0&year=${y}`;
-      const r = await fetch(url);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const d = await r.json();
-      // Expect keys: declination, inclination, H, F, X, Y, Z (deg, nT)
-      if (typeof d.declination === 'number') { inpDecl.value = d.declination.toFixed(2); }
-      outWmmD.textContent = (d.declination!=null)? d.declination.toFixed(2)+'°' : '–';
-      outWmmI.textContent = (d.inclination!=null)? d.inclination.toFixed(2)+'°' : '–';
-      outWmmH.textContent = (d.H!=null)? d.H.toFixed(0) : '–';
-      outWmmF.textContent = (d.F!=null)? d.F.toFixed(0) : '–';
-      outWmmX.textContent = (d.X!=null)? d.X.toFixed(0) : '–';
-      outWmmY.textContent = (d.Y!=null)? d.Y.toFixed(0) : '–';
-      outWmmZ.textContent = (d.Z!=null)? d.Z.toFixed(0) : '–';
-      outWmmMeta.textContent = d.model ? `${d.model} ${d.epoch||''}` : '';
-      recompute();
-    }catch(e){ alert('WMM fetch failed due to CORS or network. Enter declination manually.'); }
+      const d = await fetchWmmNoaa(currentPos.lat, currentPos.lon);
+      applyWmmToUi(d);
+    }catch(e1){
+      try{
+        const d2 = await fetchWmmFallback(currentPos.lat, currentPos.lon);
+        applyWmmToUi(d2);
+      }catch(e2){
+        alert('WMM fetch failed (NOAA/CORS). Enter declination manually.');
+      }
+    }
   });
 
   // Observations: store bearing lines and solve intersection (least squares).
