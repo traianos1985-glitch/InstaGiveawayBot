@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Larmor Map & Deviation</title>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Larmor Map & Target Deviation</h1>
+      <div class="controls">
+        <button id="btnUseLocation">Use my location</button>
+        <label><input type="checkbox" id="chkFollow" checked> Follow me</label>
+        <button id="btnCompass">Enable compass</button>
+        <label>Declination (°): <input id="inpDecl" type="number" step="0.1" value="0"></label>
+        <button id="btnFetchDecl">Fetch declination</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="map"></div>
+      <aside>
+        <section>
+          <h2>Live</h2>
+          <div class="kv"><span>Lat</span><output id="outLat">–</output></div>
+          <div class="kv"><span>Lon</span><output id="outLon">–</output></div>
+          <div class="kv"><span>Accuracy</span><output id="outAcc">–</output></div>
+          <div class="kv"><span>Heading (mag)</span><output id="outHeadMag">–</output></div>
+          <div class="kv"><span>Heading (true)</span><output id="outHeadTrue">–</output></div>
+          <div class="kv"><span>Bearing→Target</span><output id="outBearing">–</output></div>
+          <div class="kv"><span>Deviation</span><output id="outDev">–</output></div>
+          <div class="kv"><span>Distance</span><output id="outDist">–</output></div>
+        </section>
+        <section>
+          <h2>Help</h2>
+          <p>Tap on the map to set a target. Use your device location and compass to compute signed deviation. Declination is added to magnetic heading to produce true heading.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
