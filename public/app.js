@@ -310,4 +310,173 @@ function init() {
   initSurvey();
 }
 
+// -------- Survey mode (bearings -> target estimate) --------
+function initSurvey() {
+  const survey = {
+    points: [], // {lat, lon, bearingMagDeg, declinationDeg, bearingTrueDeg, distanceM}
+    lastGPS: null,
+  };
+
+  async function getDeclinationAt(lat, lon) {
+    // Use both providers and average
+    const dtVal = document.getElementById('dt').value;
+    const dateIso = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
+    const altMetersRaw = parseFloat(document.getElementById('altitude').value);
+    const altMeters = Number.isFinite(altMetersRaw) ? altMetersRaw : 0;
+    async function get(provider) {
+      const url = provider === 'noaa'
+        ? `/api/field/noaa?lat=${lat}&lon=${lon}&alt=${altMeters}&date=${encodeURIComponent(dateIso)}`
+        : `/api/field/bgs?lat=${lat}&lon=${lon}&alt=${altMeters}&date=${encodeURIComponent(dateIso)}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+    const [a, b] = await Promise.allSettled([get('noaa'), get('bgs')]);
+    const vals = [];
+    if (a.status === 'fulfilled' && typeof a.value.declinationDeg === 'number') vals.push(a.value.declinationDeg);
+    if (b.status === 'fulfilled' && typeof b.value.declinationDeg === 'number') vals.push(b.value.declinationDeg);
+    const mean = vals.length ? (vals.reduce((s, x) => s + x, 0) / vals.length) : undefined;
+    return mean;
+  }
+
+  function llToXY(lat, lon, lat0, lon0) {
+    const R = 6371000; // meters
+    const toRad = Math.PI / 180;
+    const x = (lon - lon0) * toRad * Math.cos(lat0 * toRad) * R;
+    const y = (lat - lat0) * toRad * R;
+    return { x, y };
+  }
+
+  function xyToLL(x, y, lat0, lon0) {
+    const R = 6371000;
+    const toDeg = 180 / Math.PI;
+    const lat = y / R * toDeg + lat0;
+    const lon = x / (R * Math.cos(lat0 * Math.PI / 180)) * toDeg + lon0;
+    return { lat, lon };
+  }
+
+  function normalizeDeg(a) {
+    let d = a % 360; if (d < 0) d += 360; return d;
+  }
+
+  function solveIntersection(points) {
+    if (points.length < 2) return null;
+    const lat0 = points[0].lat, lon0 = points[0].lon;
+    let Axx = 0, Axy = 0, Ayx = 0, Ayy = 0; // A = sum(M_i)
+    let bx = 0, by = 0; // b = sum(M_i p_i) + distance terms
+    for (const p of points) {
+      const { x, y } = llToXY(p.lat, p.lon, lat0, lon0);
+      const th = (p.bearingTrueDeg) * Math.PI / 180;
+      const ux = Math.sin(th), uy = Math.cos(th); // East, North
+      const nx = -uy, ny = ux; // normal
+      // Line constraint
+      const Mnx_xx = nx * nx, Mnx_xy = nx * ny, Mnx_yy = ny * ny;
+      Axx += Mnx_xx; Axy += Mnx_xy; Ayx += Mnx_xy; Ayy += Mnx_yy;
+      bx += Mnx_xx * x + Mnx_xy * y;
+      by += Mnx_xy * x + Mnx_yy * y;
+      // Optional distance along bearing
+      if (Number.isFinite(p.distanceM) && p.distanceM > 0) {
+        const lambda = 0.25; // weight for distance penalty
+        const Mu_xx = ux * ux * lambda, Mu_xy = ux * uy * lambda, Mu_yy = uy * uy * lambda;
+        Axx += Mu_xx; Axy += Mu_xy; Ayx += Mu_xy; Ayy += Mu_yy;
+        // b += (Mu * pvec) + lambda * d * u
+        bx += Mu_xx * x + Mu_xy * y + lambda * p.distanceM * ux;
+        by += Mu_xy * x + Mu_yy * y + lambda * p.distanceM * uy;
+      }
+    }
+    // Solve 2x2: A * X = b
+    const det = Axx * Ayy - Axy * Ayx;
+    if (Math.abs(det) < 1e-12) return null;
+    const invAxx =  Ayy / det;
+    const invAxy = -Axy / det;
+    const invAyx = -Ayx / det;
+    const invAyy =  Axx / det;
+    const Xx = invAxx * bx + invAxy * by;
+    const Xy = invAyx * bx + invAyy * by;
+    const { lat, lon } = xyToLL(Xx, Xy, lat0, lon0);
+    return { lat, lon, x: Xx, y: Xy, ref: { lat0, lon0 } };
+  }
+
+  function bearingDistance(from, to) {
+    const R = 6371000;
+    const toRad = Math.PI / 180, toDeg = 180 / Math.PI;
+    const lat1 = from.lat * toRad, lat2 = to.lat * toRad;
+    const dLat = lat2 - lat1;
+    const dLon = (to.lon - from.lon) * toRad;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dist = R * c;
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+    const brng = normalizeDeg(Math.atan2(y, x) * toDeg); // true bearing
+    return { distanceM: dist, bearingDeg: brng };
+  }
+
+  function cardinal(deg) {
+    const dirs = ['Β', 'ΒΑ', 'Α', 'ΝΑ', 'Ν', 'ΝΔ', 'Δ', 'ΒΔ', 'Β'];
+    return dirs[Math.round(deg / 45)];
+  }
+
+  async function addPointFromUI() {
+    const bearingMagDeg = parseFloat(document.getElementById('magBearing').value);
+    if (!Number.isFinite(bearingMagDeg)) { alert('Δώστε μαγνητικό αζιμούθιο (°).'); return; }
+    if (!survey.lastGPS) { alert('Πατήστε «Χρήση τρέχουσας θέσης» για να οριστεί σημείο.'); return; }
+    const decl = await getDeclinationAt(survey.lastGPS.lat, survey.lastGPS.lon);
+    const bearingTrueDeg = normalizeDeg(bearingMagDeg + (decl || 0));
+    const d = parseFloat(document.getElementById('distance').value);
+    const point = {
+      lat: survey.lastGPS.lat,
+      lon: survey.lastGPS.lon,
+      bearingMagDeg,
+      declinationDeg: decl,
+      bearingTrueDeg,
+      distanceM: Number.isFinite(d) ? d : undefined,
+    };
+    survey.points.push(point);
+    renderSurveyList();
+  }
+
+  function renderSurveyList() {
+    const listEl = document.getElementById('surveyList');
+    if (survey.points.length === 0) { listEl.textContent = '—'; return; }
+    const rows = survey.points.map((p, i) => {
+      const where = `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
+      const declTxt = (typeof p.declinationDeg === 'number') ? `, dec=${p.declinationDeg.toFixed(2)}°` : '';
+      const distTxt = (typeof p.distanceM === 'number') ? `, d=${p.distanceM.toFixed(1)}m` : '';
+      return `${i+1}) ${where} — mag=${p.bearingMagDeg.toFixed(1)}°, true=${p.bearingTrueDeg.toFixed(1)}°${declTxt}${distTxt}`;
+    });
+    listEl.innerHTML = rows.map(r => `<div>${r}</div>`).join('');
+  }
+
+  async function useGPS() {
+    const status = document.getElementById('geoStatus');
+    status.textContent = 'Λήψη τοποθεσίας (Survey)…';
+    if (!navigator.geolocation) { status.textContent = 'Ο browser δεν υποστηρίζει γεωεντοπισμό.'; return; }
+    navigator.geolocation.getCurrentPosition((pos) => {
+      survey.lastGPS = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      status.textContent = `Θέση: ${survey.lastGPS.lat.toFixed(5)}, ${survey.lastGPS.lon.toFixed(5)}`;
+    }, (err) => {
+      status.textContent = 'Σφάλμα γεωεντοπισμού.';
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }
+
+  function solveAndRender() {
+    const res = solveIntersection(survey.points);
+    const outEl = document.getElementById('surveyResult');
+    if (!res) { outEl.innerHTML = '<p class="warning">Χρειάζονται τουλάχιστον 2 κατάλληλες κατευθύνσεις.</p>'; return; }
+    const last = survey.points[survey.points.length - 1];
+    const off = bearingDistance({ lat: last.lat, lon: last.lon }, { lat: res.lat, lon: res.lon });
+    const dirTxt = `${off.bearingDeg.toFixed(1)}° (${cardinal(off.bearingDeg)})`;
+    outEl.innerHTML = `
+      <p>Εκτίμηση θέσης στόχου: <strong>${res.lat.toFixed(6)}, ${res.lon.toFixed(6)}</strong></p>
+      <p>Από το τελευταίο σημείο: κίνηση <strong>${off.distanceM.toFixed(1)} m</strong> προς <strong>${dirTxt}</strong>.</p>
+      <p class="muted small">Η γωνία είναι ως προς τον αληθινό βορρά (διορθωμένο με declination).</p>
+    `;
+  }
+
+  document.getElementById('btnAddPoint').addEventListener('click', addPointFromUI);
+  document.getElementById('btnUseGPS').addEventListener('click', useGPS);
+  document.getElementById('btnSolve').addEventListener('click', solveAndRender);
+}
+
 init();
