@@ -15,6 +15,7 @@
         <button id="btnUseLocation">Use my location</button>
         <label><input type="checkbox" id="chkFollow" checked> Follow me</label>
         <button id="btnCompass">Enable compass</button>
+        <button id="btnBaro">Enable barometer</button>
         <button id="btnMagneto">Enable magnetometer</button>
         <label>Declination (°): <input id="inpDecl" type="number" step="0.1" value="0"></label>
         <button id="btnFetchDecl">Fetch declination</button>
@@ -54,6 +55,11 @@
           <div class="kv"><span>Y (nT)</span><output id="outWmmY">–</output></div>
           <div class="kv"><span>Z (nT)</span><output id="outWmmZ">–</output></div>
           <small id="outWmmMeta"></small>
+        </section>
+        <section>
+          <h2>Barometer</h2>
+          <div class="kv"><span>Pressure</span><output id="outBaroP">–</output></div>
+          <div class="kv"><span>Baro Alt (~)</span><output id="outBaroAlt">–</output></div>
         </section>
         <section>
           <h2>Device magnetometer</h2>

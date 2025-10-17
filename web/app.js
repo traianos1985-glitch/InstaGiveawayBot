@@ -30,6 +30,8 @@
   const outWmmMeta=el('outWmmMeta');
   const outBx=el('outBx'), outBy=el('outBy'), outBz=el('outBz'), outBmag=el('outBmag');
   const outObsCount=el('outObsCount'), outSolve=el('outSolve');
+  const outBaroP=el('outBaroP'), outBaroAlt=el('outBaroAlt');
+  let barometer = null;
 
   chkFollow.addEventListener('change', ()=>{ follow = chkFollow.checked; });
 
@@ -146,6 +148,35 @@
     }
     if(heading!=null){ magHeadingDeg = wrap360(heading); recompute(); }
   }
+
+  // Barometer (Generic Sensor API). Approx altitude from pressure using ISA.
+  el('btnBaro').addEventListener('click', async ()=>{
+    try{
+      const anyWin = window;
+      if (anyWin.DeviceMotionEvent && typeof anyWin.DeviceMotionEvent.requestPermission === 'function'){
+        try{ await anyWin.DeviceMotionEvent.requestPermission(); }catch{}
+      }
+      if ('AbsoluteOrientationSensor' in window) {
+        // just a check for sensor permissions on some platforms
+      }
+      if ('Barometer' in window) {
+        barometer = new window.Barometer({ frequency: 1 });
+        barometer.addEventListener('reading', ()=>{
+          const p = barometer.pressure; // in Pa
+          outBaroP.textContent = p.toFixed(0)+' Pa';
+          // International Standard Atmosphere: h ≈ 44330 * (1 - (P/P0)^(1/5.255))
+          const P0 = 101325; // sea-level Pa
+          const h = 44330 * (1 - Math.pow(p / P0, 1/5.255));
+          outBaroAlt.textContent = h.toFixed(1)+' m';
+        });
+        barometer.addEventListener('error', (e)=>{ console.warn('Barometer error', e.error || e); });
+        barometer.start();
+        alert('Barometer enabled');
+      } else {
+        alert('Barometer not supported on this device/browser');
+      }
+    }catch(e){ alert('Barometer failed'); }
+  });
 
   // Magnetometer
   el('btnMagneto').addEventListener('click', async ()=>{
