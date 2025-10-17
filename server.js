@@ -242,7 +242,7 @@ app.get('/api/chat', (req, res) => {
   res.json(chatMessages);
 });
 
-const PORT = 3000;
+const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Larmor frequency calculator with real-time data and chat interface`);
