@@ -200,6 +200,22 @@ function bindGeophysicsUI() {
     if (mode === 'coins') {
       coinCount = Math.max(1, Math.floor(parseFloat(el('coinCount').value) || 1));
       coinDiameterMm = parseFloat(el('coinDiameter').value);
+      const ammo = document.getElementById('ammoBoxChk').checked;
+      if (ammo) {
+        const capacity = Math.max(1, Math.floor(parseFloat(document.getElementById('boxCapacity').value) || 3000));
+        // assume packs of full boxes if count > capacity
+        const boxes = Math.max(1, Math.ceil(coinCount / capacity));
+        // top area per box (m^2)
+        const L = parseFloat(document.getElementById('boxTopLcm').value) / 100; // cm -> m
+        const W = parseFloat(document.getElementById('boxTopWcm').value) / 100;
+        const areaPerBox = (Number.isFinite(L) && Number.isFinite(W) && L>0 && W>0) ? (L * W) : 0.09; // default 0.3x0.3
+        // Replace coin proxy by equivalent area of stacked metal lids (larger coupling)
+        // Map area -> equivalent coin count
+        const rCoin = (coinDiameterMm / 1000) / 2;
+        const areaCoin = Math.PI * rCoin * rCoin;
+        const totalArea = boxes * areaPerBox;
+        coinCount = areaCoin > 0 ? Math.max(1, Math.round(totalArea / areaCoin)) : coinCount;
+      }
     } else {
       const massKg = parseFloat(document.getElementById('massKg').value);
       const rho_g_cm3 = parseFloat(document.getElementById('density').value);

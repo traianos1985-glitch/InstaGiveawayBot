@@ -126,6 +126,15 @@
         <input id="coinDiameter" type="number" step="any" value="22.05" />
         <span class="muted">mm (Λίρα Αγγλίας ≈ 22.05)</span>
       </div>
+      <div class="row" id="ammoBoxRow">
+        <label><input type="checkbox" id="ammoBoxChk" /> Κιβώτιο πυρομαχικών</label>
+        <label for="boxCapacity">Χωρητικότητα/κιβώτιο:</label>
+        <input id="boxCapacity" type="number" step="1" value="3000" />
+        <label for="boxTopLcm">Επάνω επιφάνεια κιβωτίου (cm):</label>
+        <input id="boxTopLcm" type="number" step="any" value="30" />
+        ×
+        <input id="boxTopWcm" type="number" step="any" value="30" />
+      </div>
       <div class="row" id="massRow1" style="display:none">
         <label for="massKg">Μάζα στόχου:</label>
         <input id="massKg" type="number" step="any" placeholder="95.9" />
