@@ -179,6 +179,15 @@
         <span class="muted">Χρειάζονται ≥2 σημεία (bearing/απόσταση)</span>
       </div>
       <div class="row">
+        <label for="memoryName">Όνομα σετ:</label>
+        <input id="memoryName" type="text" placeholder="π.χ. Messinia-spot-1" />
+        <button id="btnSaveSet">Αποθήκευση</button>
+        <label for="savedSets">Σετ:</label>
+        <select id="savedSets"></select>
+        <button id="btnLoadSet">Φόρτωση</button>
+        <button id="btnDeleteSet">Διαγραφή</button>
+      </div>
+      <div class="row">
         <label for="magBearing">Μαγνητικό αζιμούθιο (°):</label>
         <input id="magBearing" type="number" step="any" placeholder="αυτόματο" disabled />
         <button id="btnEnableCompass">Ενεργοποίηση πυξίδας</button>

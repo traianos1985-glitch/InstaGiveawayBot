@@ -586,6 +586,62 @@ function initSurvey() {
   document.getElementById('btnAddPoint').addEventListener('click', addPointFromUI);
   document.getElementById('btnUseGPS').addEventListener('click', useGPS);
   document.getElementById('btnSolve').addEventListener('click', solveAndRender);
+
+  // Memory (localStorage)
+  const savedSetsSel = document.getElementById('savedSets');
+  function refreshSets() {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('survey:')).sort();
+    savedSetsSel.innerHTML = '';
+    keys.forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k; opt.textContent = k.replace(/^survey:/,'');
+      savedSetsSel.appendChild(opt);
+    });
+  }
+  refreshSets();
+  function saveSet() {
+    const name = document.getElementById('memoryName').value.trim();
+    if (!name) { alert('Δώστε όνομα σετ.'); return; }
+    if (survey.points.length < 2) { alert('Χρειάζονται ≥2 σημεία για αποθήκευση.'); return; }
+    localStorage.setItem(`survey:${name}`, JSON.stringify(survey.points));
+    refreshSets();
+  }
+  function loadSet() {
+    const key = savedSetsSel.value; if (!key) return;
+    const val = localStorage.getItem(key);
+    if (!val) return;
+    try {
+      const arr = JSON.parse(val);
+      survey.points = Array.isArray(arr) ? arr : [];
+      renderSurveyList();
+      // plot markers
+      ensureMap();
+      // clear existing markers
+      // not tracking marker refs individually per set; simple refresh:
+      location.reload();
+    } catch {}
+  }
+  function deleteSet() {
+    const key = savedSetsSel.value; if (!key) return;
+    localStorage.removeItem(key);
+    refreshSets();
+  }
+  document.getElementById('btnSaveSet').addEventListener('click', saveSet);
+  document.getElementById('btnLoadSet').addEventListener('click', loadSet);
+  document.getElementById('btnDeleteSet').addEventListener('click', deleteSet);
+
+  // Autosave after 4 points
+  const origAddPoint = addPointFromUI;
+  // already bound; we wrap autosave via survey.points length check in renderSurveyList
+  const _renderSurveyList = renderSurveyList;
+  renderSurveyList = function() {
+    _renderSurveyList();
+    const autoName = document.getElementById('memoryName').value.trim() || `auto-${new Date().toISOString().slice(0,19)}`;
+    if (survey.points.length >= 4) {
+      localStorage.setItem(`survey:${autoName}`, JSON.stringify(survey.points));
+      refreshSets();
+    }
+  }
 }
 
 init();
