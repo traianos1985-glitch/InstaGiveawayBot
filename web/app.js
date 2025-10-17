@@ -19,6 +19,7 @@
 
   const el = (id)=>document.getElementById(id);
   const outLat=el('outLat'), outLon=el('outLon'), outAcc=el('outAcc');
+  const outAlt=el('outAlt'), outSpd=el('outSpd'), outCrs=el('outCrs');
   const outHeadMag=el('outHeadMag'), outHeadTrue=el('outHeadTrue'), outBearing=el('outBearing');
   const outDev=el('outDev'), outDist=el('outDist');
   const chkFollow=el('chkFollow');
@@ -111,6 +112,9 @@
         outLon.textContent = lon.toFixed(6);
         setUserLocation(lon, lat);
         setAccuracy(lon, lat, p.coords.accuracy);
+        if (typeof p.coords.altitude === 'number') outAlt.textContent = p.coords.altitude.toFixed(1) + ' m'; else outAlt.textContent = '–';
+        if (typeof p.coords.speed === 'number') outSpd.textContent = (p.coords.speed||0).toFixed(1) + ' m/s'; else outSpd.textContent = '–';
+        if (typeof p.coords.heading === 'number') outCrs.textContent = wrap360(p.coords.heading).toFixed(1) + '°'; else outCrs.textContent = '–';
         recompute();
       },
       err=>{ console.warn(err); alert('Geolocation error: '+err.message); },
@@ -188,12 +192,13 @@
     outWmmMeta.textContent = d.model ? `${d.model} ${d.epoch||''}` : '';
     recompute();
   }
-  async function fetchWmmNoaa(lat, lon){
+  async function fetchWmmNoaa(lat, lon, altMeters){
     const decYear = decimalYear(new Date());
     const model = 'WMM2025';
     // Try NOAA Geomag calculators full components
     const base = 'https://www.ngdc.noaa.gov/geomag-web/calculators/calculate';
-    const url = `${base}?lat1=${lat}&lon1=${lon}&model=${model}&startYear=${decYear.toFixed(4)}&endYear=${decYear.toFixed(4)}&altitude=0&resultFormat=json&coordinateSystem=geodetic`;
+    const altKm = Math.max(0, (altMeters||0))/1000;
+    const url = `${base}?lat1=${lat}&lon1=${lon}&model=${model}&startYear=${decYear.toFixed(4)}&endYear=${decYear.toFixed(4)}&altitude=${altKm}&resultFormat=json&coordinateSystem=geodetic`;
     const r = await fetch(url, { mode:'cors' });
     if (!r.ok) throw new Error('NOAA HTTP '+r.status);
     const j = await r.json();
@@ -215,9 +220,10 @@
     if (out.declination==null) throw new Error('Unexpected NOAA payload');
     return out;
   }
-  async function fetchWmmFallback(lat, lon){
+  async function fetchWmmFallback(lat, lon, altMeters){
     const y = new Date().getUTCFullYear();
-    const url = `https://geomag.amentum.space/wmm?lat=${lat}&lon=${lon}&alt=0&year=${y}`;
+    const altKm = Math.max(0, (altMeters||0))/1000;
+    const url = `https://geomag.amentum.space/wmm?lat=${lat}&lon=${lon}&alt=${altKm}&year=${y}`;
     const r = await fetch(url);
     if(!r.ok) throw new Error('Fallback HTTP '+r.status);
     const d = await r.json();
@@ -227,11 +233,13 @@
   el('btnFetchWMM').addEventListener('click', async ()=>{
     if(!currentPos){ alert('No position yet'); return; }
     try{
-      const d = await fetchWmmNoaa(currentPos.lat, currentPos.lon);
+      const alt = parseFloat(outAlt.textContent) || 0;
+      const d = await fetchWmmNoaa(currentPos.lat, currentPos.lon, alt);
       applyWmmToUi(d);
     }catch(e1){
       try{
-        const d2 = await fetchWmmFallback(currentPos.lat, currentPos.lon);
+        const alt = parseFloat(outAlt.textContent) || 0;
+        const d2 = await fetchWmmFallback(currentPos.lat, currentPos.lon, alt);
         applyWmmToUi(d2);
       }catch(e2){
         alert('WMM fetch failed (NOAA/CORS). Enter declination manually.');
